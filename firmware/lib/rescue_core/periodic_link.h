@@ -59,6 +59,11 @@ class PeriodicBand {
     return pending_ && (uint32_t)(now - began_) < CHECKIN_RESPONSE_MS && !cooling(now);
   }
   bool success_led(uint32_t now) const { return acknowledged_ && (uint32_t)(now - acknowledged_at_) < 5000; }
+  bool status_led(uint32_t now) const {
+    return waiting(now) ||
+           (awaiting_ack_ && (uint32_t)(now - confirmed_at_) < CHECKIN_RESPONSE_MS) ||
+           success_led(now);
+  }
   Event on_packet(const uint8_t* raw, size_t len, uint32_t slot, uint32_t now,
                  uint8_t reply[PACKET_LEN], uint8_t bits[3]) {
     uint32_t matched;

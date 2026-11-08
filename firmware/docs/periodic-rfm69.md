@@ -86,8 +86,10 @@ USB; synchronize again after a reset. A XIAO forwards its time to its radio mode
    within the 30-second request window. The band sends an authenticated confirmation.
    The dog logs `#PERSON_CONFIRMED band=<ID> next=2h` and sends a signed ACK.
    Only a matching, authenticated ACK makes the band log `#CONFIRMED led=5s`.
-   While a button is physically pressed the status LED is on; otherwise it is
-   off except for exactly 5 seconds after the first valid ACK. Duplicate ACKs
+   The status LED is normally off. An authenticated addressed request turns it
+   on while awaiting the gesture and the dog ACK; it turns off exactly 5 seconds
+   after the first valid ACK, or when an unanswered request/ACK wait expires.
+   Idle button presses do not turn the status LED on. Duplicate ACKs
    cannot prolong that indication. The modem LED mirrors the XIAO status.
    The dog LED is also on for 5 seconds after a newly accepted confirmation.
 5. The dog skips **that band for two hours starting at receipt of confirmation**.

@@ -690,6 +690,6 @@ void loop() {
   if (periodic_band) {
     uint8_t retry[rescue::PACKET_LEN];
     if (periodic_band->retry_confirmation(now, retry)) send(retry, last_medium, true);
-    led(down || periodic_band->success_led(now));
+    led(periodic_band->status_led(now));
   }
 }

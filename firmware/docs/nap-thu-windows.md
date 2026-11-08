@@ -159,8 +159,8 @@ Kết quả mong đợi:
    rồi thả**. Hai lần bấm nhanh mỗi lần không quá 0,5 giây; khoảng nghỉ không quá
    1,5 giây. Không bấm nút RESET. Dog in `#PERSON_CONFIRMED band=... next=2h`.
    Khi vòng nhận gói báo nhận đúng từ dog, nó in `#CONFIRMED led=5s`: đèn trạng
-   thái sáng 5 giây rồi tắt. Đèn cũng sáng trong lúc đang bấm nút; đèn nguồn/sạc
-   không thuộc chức năng này.
+   thái sáng thêm 5 giây rồi tắt. Đèn bật từ khi nhận yêu cầu hợp lệ; bấm nút
+   khi không có yêu cầu không bật đèn. Đèn nguồn/sạc không thuộc chức năng này.
 4. Gõ `#?`: vòng đó ở `CONFIRMED_WAIT_2H`. Dog không hỏi lại nó trong 2 giờ;
    vòng khác chưa xác nhận vẫn được hỏi. Không cần chờ 2 giờ để thử các bước 1–3.
 
@@ -203,7 +203,7 @@ khôi phục hoạt động; bản probe thay thế firmware check-in trên boar
 
 Module nút có đèn: **SIG1 nối XIAO D1** (điều khiển LED), **SIG2 nối D3**
 (đọc nút), chung GND. Cấu hình `PIN_BUTTON_LED = D1` điều khiển đèn trên module:
-sáng khi bấm, sáng 5 giây sau ACK hợp lệ rồi tắt. Không nối SIG1 trực tiếp vào
+bình thường tắt, nhận yêu cầu hợp lệ thì sáng chờ; sau ACK hợp lệ sáng thêm 5 giây rồi tắt. Không nối SIG1 trực tiếp vào
 nguồn nếu muốn firmware điều khiển đèn. Bản thay đổi chân LED chỉ cần nạp lại XIAO,
 không tạo lại khóa hoặc nạp lại các Feather nếu đã có bản thao tác nút và ACK.
 
@@ -226,3 +226,11 @@ Phép thử tạm dừng xử lý vòng trong 10 giây, không phát gói radio.
 cả hai mức. Chưa tự đảo mức LED nếu đèn không đổi theo hai mức này; cần kiểm tra
 chân SIG1, nguồn/GND và module. Sau `#LED_TEST done`, logic thường tiếp tục nên
 đèn có thể đổi lại theo trạng thái nút.
+
+### Giữ nguyên dây, chỉ đổi logic đèn
+
+Bản logic mới vẫn dùng SIG1→D1, SIG2→D3. Code chỉ đặt mức logic chân D1;
+không cắt nguồn VCC. Nếu module cấp 5V vẫn còn sáng mờ ở mức OFF thì thay đổi
+logic thời gian không bảo đảm ngắt hoàn toàn dòng qua LED. Cần đối chiếu mạch
+và mức điện áp của module trước khi chọn giải pháp phần cứng; không tăng GPIO
+XIAO lên 5V. Bản đổi logic này chỉ cần nạp lại XIAO với khóa riêng cũ.
