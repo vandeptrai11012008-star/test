@@ -27,8 +27,9 @@ robot không cần gõ lệnh bắt đầu từng lượt: chương trình tự 
 cho dog nếu dog báo chưa có giờ. Nó không gửi lệnh xác nhận, xóa chờ hay di chuyển.
 
 Màn hình hiển thị ID vòng, chờ thao tác nút/đã xác nhận, thời gian chờ hỏi lại
-và log USB. Nếu mở màn hình sau khi một vòng đã xác nhận thì chưa biết chính xác
-thời điểm bắt đầu đếm; màn hình không tự bịa thời gian còn lại. Mất USB làm dữ
+và log USB. Firmware dog mới gửi `remaining_s` cho từng vòng, nên mở màn hình
+sau khi xác nhận vẫn thấy thời gian còn lại. Với firmware dog cũ chưa gửi trường
+này, màn hình báo đang chờ đếm ngược từ dog thay vì tự bịa thời điểm bắt đầu. Mất USB làm dữ
 liệu được đánh dấu cũ. `CONFIRMED_WAIT_2H` không có nghĩa vòng đang ở gần hoặc
 người đeo đang an toàn. ACK trên đèn vòng là kiểm tra riêng cho đường về.
 
@@ -93,3 +94,12 @@ lại giờ dog. Khi sẵn sàng, dog tự phát và màn hình theo dõi lượ
 Nếu Windows đổi cổng khi reset, chọn lại cổng dog. Đây là cách dàn dựng lượt thử;
 không cần tạm dừng/xóa chờ ở mỗi lượt sử dụng bình thường. Lệnh `--auto 0`
 được gửi trước khi đặt giờ/xóa chờ để không tự bật phát trong lúc chuẩn bị.
+
+### Hiện "Waiting for countdown from dog"
+
+Đó là trường hợp mở màn hình sau khi xác nhận nhưng dog vẫn dùng firmware cũ,
+chỉ báo `CONFIRMED_WAIT_2H` mà không báo số giây còn lại. Cập nhật repository,
+nạp lại **chỉ Feather dog** với `dog-secrets.h` và đúng target RFM9x/RFM69, rồi
+mở lại chương trình laptop. Không cần nạp lại XIAO hoặc modem của vòng. Việc
+nạp lại làm dog khởi động lại và mất bộ chờ RAM cũ; phép thử tiếp theo sẽ có
+đếm ngược ngay cả khi mở màn hình muộn.

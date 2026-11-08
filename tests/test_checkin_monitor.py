@@ -51,6 +51,20 @@ def test_joining_existing_cooldown_does_not_invent_a_start_time():
     assert len(state.snapshot()["logs"]) == 100
 
 
+def test_late_join_uses_device_countdown_and_refreshes_from_reports():
+    now = [100.0]
+    state = load_monitor().Telemetry(clock=lambda: now[0])
+    state.line("#PEER band=0000E432B076B144 state=CONFIRMED_WAIT_2H remaining_s=3600")
+    assert state.snapshot()["peers"][0]["remaining_seconds"] == 3600
+    now[0] += 5
+    assert state.snapshot()["peers"][0]["remaining_seconds"] == 3595
+    state.line("#PEER band=0000E432B076B144 state=CONFIRMED_WAIT_2H remaining_s=3594")
+    assert state.snapshot()["peers"][0]["remaining_seconds"] == 3594
+    state.line("#WAIT_CLEARED dog")
+    assert state.snapshot()["peers"][0]["remaining_seconds"] is None
+    assert state.snapshot()["peers"][0]["remaining_until"] is None
+
+
 def test_viewer_serves_actual_state_and_rejects_commands():
     monitor = load_monitor()
     state = monitor.Telemetry()

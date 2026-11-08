@@ -53,25 +53,30 @@ class Telemetry:
                     self.interval = int(interval)
             if line == "#WAIT_CLEARED dog":
                 for peer in self.peers.values():
-                    peer.update(state="WAITING", confirmed_at=None, updated=now)
+                    peer.update(state="WAITING", confirmed_at=None, remaining_until=None, updated=now)
             band = fields.get("band", "")
             if not re.fullmatch(r"[0-9a-fA-F]{16}", band):
                 return
             band = band.upper()
-            peer = self.peers.setdefault(band, {"id": band, "state": "WAITING", "confirmed_at": None})
+            peer = self.peers.setdefault(band, {"id": band, "state": "WAITING", "confirmed_at": None, "remaining_until": None})
             peer["updated"] = now
             if line.startswith("#PERSON_CONFIRMED "):
-                peer.update(state="CONFIRMED_WAIT_2H", confirmed_at=now)
+                peer.update(state="CONFIRMED_WAIT_2H", confirmed_at=now, remaining_until=None)
             elif line.startswith("#BAND_SEEN "):
-                peer.update(state="BAND_SEEN_WAIT_BUTTON", confirmed_at=None)
+                peer.update(state="BAND_SEEN_WAIT_BUTTON", confirmed_at=None, remaining_until=None)
             elif line.startswith("#BEACON "):
-                peer.update(state="WAITING", confirmed_at=None)
+                peer.update(state="WAITING", confirmed_at=None, remaining_until=None)
             elif line.startswith("#PEER "):
                 state = fields.get("state")
                 if state in ("WAITING", "BAND_SEEN_WAIT_BUTTON", "CONFIRMED_WAIT_2H"):
                     peer["state"] = state
                     if state != "CONFIRMED_WAIT_2H":
                         peer["confirmed_at"] = None
+                        peer["remaining_until"] = None
+                    else:
+                        remaining = fields.get("remaining_s", "")
+                        if remaining.isdigit() and 0 <= int(remaining) <= 7200:
+                            peer["remaining_until"] = now + int(remaining)
 
     def snapshot(self):
         with self.lock:
@@ -80,8 +85,11 @@ class Telemetry:
             for peer in self.peers.values():
                 age = max(0, now - peer["updated"])
                 remaining = None
-                if peer["state"] == "CONFIRMED_WAIT_2H" and peer["confirmed_at"] is not None:
-                    remaining = max(0, int(7200 - (now - peer["confirmed_at"])))
+                if peer["state"] == "CONFIRMED_WAIT_2H":
+                    if peer["remaining_until"] is not None:
+                        remaining = max(0, min(7200, int(peer["remaining_until"] - now)))
+                    elif peer["confirmed_at"] is not None:
+                        remaining = max(0, min(7200, int(7200 - (now - peer["confirmed_at"]))))
                 peers.append(dict(peer, age_seconds=int(age), stale=not self.connected or age > 10,
                                   remaining_seconds=remaining))
             return {"connected": self.connected, "error": self.error, "radio": self.radio,

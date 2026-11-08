@@ -40,6 +40,10 @@ int main() {
   CHECK(wrist_a.on_packet(chal,32,slot,6000,retry,bits) == rescue::PeriodicBand::RETRY_CONFIRMATION);
   CHECK(!memcmp(alive,retry,32));
   CHECK(a.receive(retry,32,6000,slot));
+  CHECK(a.remaining_seconds(6000) == 7200);
+  CHECK(a.remaining_seconds(7000) == 7199);
+  CHECK(a.remaining_seconds(7205999) == 1);
+  CHECK(a.remaining_seconds(7206000) == 0);
   uint8_t first_ack[32];
   CHECK(a.receipt(retry,32,6001,slot,first_ack));
   CHECK(wrist_a.on_packet(first_ack,32,slot,6001,reply,bits) == rescue::PeriodicBand::ACKNOWLEDGED);
@@ -92,6 +96,7 @@ int main() {
   CHECK(!c.receipt(alive,32,0x800 + 30000,slot+1,ack));
   CHECK(!c.due(0x800 + rescue::CHECKIN_COOLDOWN_MS - 1));
   CHECK(c.due(0x800 + rescue::CHECKIN_COOLDOWN_MS));
+  CHECK(c.remaining_seconds(0x800 + 1000) == 7199);
   rescue::PeriodicDog expired(key,dog_id,band_a);
   rescue::PeriodicBand expired_w(key,dog_id,band_a);
   CHECK(expired.challenge(1,slot,n,chal));
@@ -116,6 +121,7 @@ int main() {
   CHECK(no_ack.on_packet(chal,32,slot,30101,reply,bits) == rescue::PeriodicBand::PROMPT);
   // USB clear-wait cancels both cooldowns and pending receipts, preserving pairing.
   a.clear_wait(); wrist_a.clear_wait();
+  CHECK(a.remaining_seconds(7206010) == 0);
   CHECK(!a.cooling(7206010)); CHECK(!wrist_a.cooling(7206010));
   CHECK(a.due(7206010)); CHECK(!wrist_a.status_led(7206010));
   CHECK(!a.receive(alive,32,7206010,slot));

@@ -56,13 +56,15 @@ void status() {
   Serial.print(F(" paired=")); Serial.print(pairing_ok ? peer_count : 0);
   Serial.println(F(" clear_wait=1"));
   for (uint8_t i = 0; pairing_ok && i < peer_count; ++i) {
+    uint32_t now = millis();
     Serial.print(F("#PEER band=")); print_id(peers[i].id);
     Serial.print(F(" state="));
-    switch (beacons[i]->state(millis())) {
-      case rescue::PeriodicDog::CONFIRMED: Serial.println(F("CONFIRMED_WAIT_2H")); break;
-      case rescue::PeriodicDog::BAND_SEEN: Serial.println(F("BAND_SEEN_WAIT_BUTTON")); break;
-      default: Serial.println(F("WAITING"));
+    switch (beacons[i]->state(now)) {
+      case rescue::PeriodicDog::CONFIRMED: Serial.print(F("CONFIRMED_WAIT_2H")); break;
+      case rescue::PeriodicDog::BAND_SEEN: Serial.print(F("BAND_SEEN_WAIT_BUTTON")); break;
+      default: Serial.print(F("WAITING"));
     }
+    Serial.print(F(" remaining_s=")); Serial.println(beacons[i]->remaining_seconds(now));
   }
 }
 

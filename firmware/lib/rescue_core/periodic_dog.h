@@ -29,6 +29,10 @@ class PeriodicDog {
   bool cooling(uint32_t now) const {
     return confirmed_ && (uint32_t)(now - confirmed_at_) < CHECKIN_COOLDOWN_MS;
   }
+  uint32_t remaining_seconds(uint32_t now) const {
+    if (!cooling(now)) return 0;
+    return (CHECKIN_COOLDOWN_MS - (uint32_t)(now - confirmed_at_) + 999) / 1000;
+  }
   State state(uint32_t now) const { return cooling(now) ? CONFIRMED : active(now) ? state_ : WAITING; }
   bool active(uint32_t now) const { return active_ && (uint32_t)(now - began_) < RESPONSE_MS; }
   bool due(uint32_t now) const {
