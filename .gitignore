@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+firmware/.pio/
+firmware/include/secrets.h
+dog/backup/
+
+# Local-only mission brief (not source)
+Forge 2026 — Saturday Mission Brief.pdf

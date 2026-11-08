@@ -1,0 +1,11 @@
+# Optional: only needed for real hardware.
+# bleak: Bluetooth to the MechDog (rescue.console --dog ble:..., dog/dogctl.py --ble)
+bleak==0.22.3
+# pyserial: USB serial to the ESP32 band or dongle (rescue.console --serial ...)
+pyserial==3.5
+# numpy: the FSK modem in sdr/fsk_link.py (the SDR FSK bridge and its tests)
+numpy>=1.26
+# pyadi-iio (+ libiio, `brew install libiio`): the ADALM-PLUTO in sdr/sdr_fsk_bridge.py, real radio only
+pyadi-iio==0.0.19
+# pylibiio 0.25 pairs with libiio 0.25; newer libiio 1.x cannot restart the Pluto's transmit stream
+pylibiio==0.25.0
