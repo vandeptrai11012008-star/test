@@ -154,3 +154,12 @@ silence, and ALIVE from the button, all over USB. Not yet tested: the motor, and
 - **Key:** the firmware uses the public demo key from the tests. Put a real key in `include/secrets.h` as `#define GROUP_KEY_BYTES {...}`. That file is gitignored. Never commit a real key.
 - **Nonce cache:** the band remembers its last 64 challenge nonces in RAM, and a reboot forgets them. This matches the known limit in `CLAUDE.md`.
 - **Debug text:** the `#...` lines on USB are a debug channel. The band never transmits them over the air, where it stays completely silent on any failure.
+
+## Periodic dog discovery on RFM69HCW
+
+For a dog and wristband using matching Feather RFM69HCW radios, see
+[the periodic discovery guide](docs/periodic-rfm69.md). The dog broadcasts every
+2 seconds after clock sync; the wearer still presses the wristband button to
+confirm. Build target: `dog_feather_rfm69` (separate from the RFM9x `dog_feather`).
+
+Windows: [Hướng dẫn nạp và thử từng bước](docs/nap-thu-windows.md).

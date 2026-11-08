@@ -27,7 +27,12 @@
 
 #include "config.h"
 #include "rescue_core.h"
+#include "periodic_link.h"
 #include "hop.h"
+
+rescue::PeriodicBand* periodic_band = nullptr;
+bool last_was_periodic = false;
+uint64_t pairing_id = 0;
 #if defined(RADIO_FEATHER)
 #define BAND_FEATHER 1  // radio on a Feather 32u4 RFM69 over Serial1 (firmware/src/feather)
 #endif
@@ -263,7 +268,17 @@ void blink(const uint8_t bits[3]) {
 void handle(const uint8_t* raw, Medium m) {
   if (!clock_set()) Out.println("#WARN clock not set, send #T <unix>");
   uint8_t reply[rescue::PACKET_LEN], bits[3];
-  if (band.on_packet(raw, rescue::PACKET_LEN, now_slot(), reply, bits)) {
+  bool accepted = false;
+  if (raw[0] == rescue::BEACON) {
+    if (!periodic_band || !clock_set()) return;
+    auto event = periodic_band->on_packet(raw, rescue::PACKET_LEN, now_slot(), millis(), reply, bits);
+    if (event == rescue::PeriodicBand::RETRY_CONFIRMATION) { send(reply, m); return; }
+    accepted = event == rescue::PeriodicBand::PROMPT;
+  } else {
+    accepted = band.on_packet(raw, rescue::PACKET_LEN, now_slot(), reply, bits);
+  }
+  if (accepted) {
+    last_was_periodic = raw[0] == rescue::BEACON;
     last_medium = m;
     send(reply, m);  // reply first, then the human cue
     Out.printf("#BUZZ %d %d %d\n", bits[0], bits[1], bits[2]);
@@ -279,7 +294,8 @@ void handle(const uint8_t* raw, Medium m) {
 
 void press() {
   uint8_t alive[rescue::PACKET_LEN];
-  if (band.press(alive)) {
+  bool ready = last_was_periodic ? periodic_band && periodic_band->press(millis(), alive) : band.press(alive);
+  if (ready) {
     send(alive, last_medium, true);
     Out.println("#PRESS");
     out(PIN_MOTOR, true);  // feel the press go out
@@ -458,6 +474,9 @@ void command(const char* line) {
     for (int i = 0; i < n; i++) Out.printf(" %02X", got[i]);
     Out.println();
 #endif
+  } else if (line[1] == 'I') {
+    Out.printf("#PAIR_ID %08lX%08lX paired=%d\n", (unsigned long)(pairing_id >> 32),
+               (unsigned long)pairing_id, periodic_band ? 1 : 0);
   } else if (line[1] == '?') {
     Out.printf("#OK band radio=%s\n", radio_ok ? "ok" : "missing");
   }
@@ -501,6 +520,15 @@ bool was_down = false;  // button state, reset after the probe commands  // lear
 
 void setup() {
   Serial.begin(115200);
+  // Use all 48 factory MAC bits, represented as a 16-digit ID. Never a BLE name.
+  pairing_id = ESP.getEfuseMac();
+#if defined(PERIODIC_PAIR_KEY_BYTES) && defined(PERIODIC_DOG_ID)
+  static const uint8_t pair_key[rescue::KEY_LEN] = PERIODIC_PAIR_KEY_BYTES;
+  static rescue::PeriodicBand paired(pair_key, PERIODIC_DOG_ID, pairing_id);
+  periodic_band = &paired;
+#endif
+  Out.printf("#PAIR_ID %08lX%08lX paired=%d\n", (unsigned long)(pairing_id >> 32),
+             (unsigned long)pairing_id, periodic_band ? 1 : 0);
   pinMode(PIN_LED, OUTPUT);
   if (PIN_BUTTON_LED != NO_PIN) pinMode(PIN_BUTTON_LED, OUTPUT);
   led(false);

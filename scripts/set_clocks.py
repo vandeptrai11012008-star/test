@@ -4,17 +4,17 @@ Feather and the laptop dongle. Run it before a demo and again after any board re
 FSK hop schedule needs every board within a few seconds of the others):
 
     uv run --with pyserial python scripts/set_clocks.py            # set all, show status
-    uv run --with pyserial python scripts/set_clocks.py --auto 6   # also: dog checks the band every 6 s
+    uv run --with pyserial python scripts/set_clocks.py --auto 2   # set the dog's periodic interval
 
 Boards are found by asking each serial port "#?" and reading "#OK band|dog|dongle ...".
 The wristband's radio modem (its Feather) gets the clock from the XIAO, not from here."""
 import argparse
-import glob
 import sys
 import time
 
 try:
     import serial
+    from serial.tools import list_ports
 except ImportError:
     sys.exit("needs pyserial: uv run --with pyserial python scripts/set_clocks.py")
 
@@ -29,10 +29,10 @@ def ask(port, text, wait=0.8):
     return out.decode(errors="replace")
 
 
-def find_boards():
+def find_boards(ports=None):
     boards = []
-    for dev in sorted(glob.glob("/dev/cu.usbmodem*") + glob.glob("/dev/cu.usbserial*") +
-                      glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*")):
+    devices = ports if ports is not None else [port.device for port in list_ports.comports()]
+    for dev in sorted(set(devices)):
         try:
             p = serial.Serial(dev, 115200, timeout=0.1)
         except (OSError, serial.SerialException):
@@ -64,9 +64,12 @@ def status_line(kind, port):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--auto", type=int, metavar="SECONDS",
-                    help="bench: dog runs a near check by itself every N seconds (cleared by a reboot)")
+                    help="dog interval in seconds, 0 stops; RFM69 beacon defaults to 2, RFM9x near checks to off")
+    ap.add_argument("--port", action="append", help="only use this USB port; repeat for dog and XIAOs (e.g. COM5)")
     args = ap.parse_args()
-    boards = find_boards()
+    if args.auto is not None and not 0 <= args.auto <= 3600:
+        ap.error("--auto must be between 0 and 3600 seconds")
+    boards = find_boards(args.port)
     if not boards:
         sys.exit("no rescue boards answered on USB")
     send_clocks(boards)

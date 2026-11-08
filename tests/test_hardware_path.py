@@ -69,6 +69,14 @@ def test_firmware_core_matches_python_vectors(bins):
     assert "all checks passed" in out.stdout
 
 
+def test_periodic_dog_waits_for_human_and_rejects_stale_replies(tmp_path):
+    exe = tmp_path / "test_periodic_dog"
+    build("test/host/test_periodic_dog.cpp", exe)
+    result = subprocess.run([str(exe)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "periodic dog: ok" in result.stdout
+
+
 def test_fsk_hop_schedule_meets_the_channel_rules(tmp_path):
     """50+ channels inside 903-927 MHz, 250 kHz+ apart, keyed pseudorandom order, equal use,
     identical on both ends, and a clock error of a dwell lands on a neighbouring slot."""
