@@ -377,7 +377,13 @@ void command(const char* line) {
   } else if (line[1] == 'P') {
     press();
   } else if (line[1] == 'L') {
-    led(true); delay(1000); led(false);
+    // Hold each logical LED state so module polarity can be observed by eye.
+    Out.println("#LED_TEST OFF 3s");
+    led(false); Serial.flush(); delay(3000);
+    Out.println("#LED_TEST ON 3s");
+    led(true); Serial.flush(); delay(3000);
+    Out.println("#LED_TEST OFF 3s");
+    led(false); Serial.flush(); delay(3000);
     Out.println("#TEST led done");
   } else if (line[1] == 'E') {
     if (PIN_BUTTON_LED == NO_PIN) {

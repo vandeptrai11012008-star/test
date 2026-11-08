@@ -215,6 +215,10 @@ vẫn chạy bản cũ. `#P` qua USB/BLE không thay được thao tác vật l�
 
 ### Đèn module vẫn sáng sau khi thả nút
 
+Phép thử dễ nhìn: gửi `#L` để giữ lần lượt **OFF 3 giây → ON 3 giây → OFF 3 giây**,
+có log từng giai đoạn. Đây là trạng thái logic mà firmware yêu cầu; nếu đèn thực
+tế ngược với log thì cần xác định lại cực tính. Phép thử tạm dừng xử lý vòng 9 giây.
+
 Trên monitor **XIAO**, gửi `#?` để đọc `led_pin`, `button_raw` và `pressed_level`.
 Trên XIAO ESP32-S3, D1 tương ứng GPIO 2. Gửi `#E` (E viết hoa), không bấm nút:
 firmware giữ chân đèn LOW 5 giây, rồi HIGH 5 giây, và in trạng thái tương ứng.
