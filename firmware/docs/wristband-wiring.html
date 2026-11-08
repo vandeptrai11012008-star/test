@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IFF Wristband Wiring</title>
+<!-- Source of wristband-wiring.pdf. Regenerate with:
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer \
+    --print-to-pdf=firmware/docs/wristband-wiring.pdf firmware/docs/wristband-wiring.html -->
+<style>
+  @page { size: Letter; margin: 0.45in; }
+  :root { --ink:#1d2b2a; --mute:#5d6b6a; --line:#d9dedd; --pwr:#2f9e44; --gnd:#d4a000; --spi:#6f4fc7; --ctl:#0a7a86; --warn:#b45f06; }
+  * { box-sizing: border-box; }
+  body { margin:0; color:var(--ink); font:14px/1.45 "IBM Plex Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .mono { font-family:"IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  .eyebrow { font:12px "IBM Plex Mono", ui-monospace, Menlo, monospace; color:var(--mute); letter-spacing:.04em; margin-top:6px; }
+  h1 { font-size:30px; margin:6px 0 8px; letter-spacing:-.01em; }
+  .lede { max-width:660px; color:#33403f; font-size:15px; margin:0 0 16px; }
+  .diagram { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .diagram svg { display:block; width:100%; height:auto; }
+  .legend { border-top:1px solid var(--line); padding:12px 16px; font:13px "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  .legend span.k { display:inline-block; width:24px; height:3px; vertical-align:middle; margin-right:8px; }
+  .legend .item { margin-right:22px; white-space:nowrap; }
+  .legend p { margin:8px 0 0; color:var(--mute); }
+  .pb { break-before:page; }
+  .cols { display:grid; grid-template-columns: 1.05fr .95fr; gap:22px; align-items:start; }
+  h2 { font-size:22px; margin:6px 0 10px; }
+  table { width:100%; border-collapse:collapse; border:1px solid var(--line); border-radius:6px; font-size:13.5px; }
+  thead th { text-align:left; font:11px "IBM Plex Mono", ui-monospace, Menlo, monospace; color:var(--mute); letter-spacing:.06em; padding:8px 10px; border-bottom:1px solid var(--ink); }
+  td { padding:7px 10px; border-top:1px solid var(--line); vertical-align:top; }
+  tr { break-inside:avoid; }
+  tr.grp td { font-weight:600; border-top:1px solid var(--line); border-bottom:1px solid var(--ink); padding-top:10px; }
+  td.f { font:600 13px "IBM Plex Mono", ui-monospace, Menlo, monospace; white-space:nowrap; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin-bottom:14px; break-inside:avoid; }
+  .card h3 { margin:2px 0 8px; font-size:19px; }
+  .card p, .card li { font-size:14px; margin:6px 0; }
+  .card ul, .card ol { padding-left:20px; margin:6px 0; }
+  .warn { background:#fff3dd; border-color:#e5a24d; }
+  .warn h3 { color:var(--warn); font-size:15px; }
+  code { font:12.5px "IBM Plex Mono", ui-monospace, Menlo, monospace; background:#f2f4f4; padding:0 3px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">TEAM-11 · IFF BAND · FIRMWARE ENV BAND_XIAO_FEATHER + FEATHER_RADIO</div>
+<h1>IFF Wristband Wiring</h1>
+<p class="lede">Seeed XIAO ESP32-S3 with a Feather 32u4 RFM69 900 MHz radio (three wires: serial TX, RX and ground), the blue LED button, a Grove buzzer
+and a coin vibration motor. Pin names are the D labels printed on the XIAO. Unplug USB
+while you rewire.</p>
+
+<div class="diagram">
+<svg viewBox="100 300 800 495" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, Menlo, monospace">
+  <style>
+    .t { font-size:10px; fill:#5d6b6a; } .pin { font-size:11px; font-weight:700; fill:#fff; }
+    .pinl { font-size:11px; font-weight:700; fill:#1d2b2a; } .b { font-size:11px; font-weight:700; fill:#1d2b2a; }
+    .w { fill:none; stroke-width:2; } .pw { stroke:#2f9e44; } .gd { stroke:#d4a000; } .sp { stroke:#6f4fc7; } .ct { stroke:#0a7a86; }
+    .s { fill:none; stroke:#1d2b2a; stroke-width:1.4; }
+  </style>
+  <!-- XIAO -->
+  <rect x="446" y="346" width="45" height="16" rx="3" fill="#6b7776"/>
+  <text class="t" x="417" y="340">USB-C (power + code)</text>
+  <rect x="394" y="361" width="149" height="309" rx="6" fill="#243433"/>
+  <circle cx="510" cy="376" r="3.5" fill="#f08a24"/><text x="487" y="379" font-size="8" fill="#cfd8d7">LED</text>
+  <text class="pin" x="404" y="395">D0</text><text class="pin" x="404" y="437">D1</text>
+  <text x="404" y="479" font-size="11" fill="#7d8a89">D2</text>
+  <text class="pin" x="404" y="521">D3</text><text class="pin" x="404" y="562">D4</text>
+  <text class="pin" x="404" y="604">D5</text><text class="pin" x="404" y="646">D6</text>
+  <text x="533" y="395" font-size="11" fill="#7d8a89" text-anchor="end">5V</text>
+  <text class="pin" x="533" y="437" text-anchor="end">GND</text><text class="pin" x="533" y="479" text-anchor="end">3V3</text>
+  <text class="pin" x="533" y="521" text-anchor="end">D10</text><text class="pin" x="533" y="562" text-anchor="end">D9</text>
+  <text class="pin" x="533" y="604" text-anchor="end">D8</text><text class="pin" x="533" y="646" text-anchor="end">D7</text>
+  <text x="468" y="504" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">XIAO</text>
+  <text x="468" y="519" font-size="10" fill="#cfd8d7" text-anchor="middle">ESP32-S3</text>
+
+  <!-- Feather 32u4 RFM69 (radio modem over serial) -->
+  <rect x="692" y="405" width="134" height="265" rx="4" fill="#fff" stroke="#1d2b2a" stroke-width="1.4"/>
+  <text class="b" x="759" y="462" text-anchor="middle">Feather 32u4</text><text class="t" x="759" y="476" text-anchor="middle">RFM69 900 MHz</text>
+  <text class="pinl" x="701" y="437">GND</text><text class="pinl" x="701" y="646">TX</text>
+  <text class="pinl" x="817" y="562" text-anchor="end">RX</text>
+  <text class="t" x="759" y="508" text-anchor="middle">radio is wired</text><text class="t" x="759" y="520" text-anchor="middle">on the board:</text>
+  <text class="t" x="759" y="532" text-anchor="middle">CS 8, IRQ 7, RST 4</text><text class="t" x="759" y="544" text-anchor="middle">nothing to connect</text>
+  <path class="w gd" d="M543 433H692"/>
+  <path class="w sp" d="M543 642H692"/><text class="t" x="617" y="636" text-anchor="middle">D7 (RX) ← TX</text>
+  <path class="w sp" d="M394 642H379V718H871V558H826"/><text class="t" x="616" y="713" text-anchor="middle">D6 (TX) → Feather RX</text>
+  <path d="M789 405V358" stroke="#1d2b2a" stroke-width="1.5"/><circle cx="789" cy="405" r="2.5" fill="#1d2b2a"/>
+  <text class="t" x="783" y="372" text-anchor="end">ANT pad</text><text class="t" x="783" y="384" text-anchor="end">78 mm wire,</text><text class="t" x="783" y="396" text-anchor="end">upright</text>
+  <text class="t" x="759" y="690" text-anchor="middle" style="fill:#b45f06;font-weight:700">Feather: its own USB or LiPo</text>
+  <text class="t" x="759" y="702" text-anchor="middle" style="fill:#b45f06">(not from the XIAO)</text>
+
+  <!-- Blue LED button -->
+  <rect x="197" y="399" width="182" height="139" rx="6" fill="none" stroke="#7d8a89" stroke-dasharray="4 3"/>
+  <text class="b" x="200" y="394">Blue LED button</text>
+  <path class="w ct" d="M394 433H357M325 433"/>
+  <path class="s" d="M325 433l4-8 4 8 4-8 4 8 4-8 4 8"/>
+  <path class="s" d="M283 433H304M284 424v18l16-9z"/><path class="s" d="M246 433H284M246 433v8M239 441h14M242 445h8"/>
+  <path class="s" d="M290 413l6 6M295 410l6 6"/>
+  <text class="t" x="260" y="455">LED (+ right)</text><text class="t" x="325" y="420">100 Ω</text>
+  <path class="w ct" d="M394 517H328"/><path class="s" d="M246 517H292"/><circle cx="291" cy="517" r="2.2" fill="#1d2b2a"/><circle cx="328" cy="517" r="2.2" fill="#1d2b2a"/>
+  <path class="s" d="M291 517l18-13M300 500h20M310 500v-6"/><path class="s" d="M246 517v8M239 525h14M242 529h8"/>
+  <text class="t" x="293" y="531">switch</text>
+
+  <!-- Grove buzzer -->
+  <rect x="178" y="545" width="119" height="50" rx="4" fill="#fff" stroke="#1d2b2a" stroke-width="1.4"/>
+  <text class="b" x="187" y="563">Grove Buzzer</text><text class="t" x="187" y="575">v1.3 · yellow = SIG</text>
+  <text class="t" x="271" y="555" style="fill:#1d2b2a">SIG</text>
+  <path class="w ct" d="M297 558H394"/>
+  <path class="w pw" d="M178 560H150V552H138"/><text class="t" x="112" y="555" style="fill:#2f9e44;font-weight:700">3V3</text>
+  <text class="t" x="153" y="557">red</text>
+  <path class="w gd" d="M178 580H142"/><text class="t" x="144" y="577">black</text><path class="s" d="M140 580v6M133 586h14M136 590h8"/>
+
+  <!-- Motor driver -->
+  <rect x="122" y="626" width="251" height="158" rx="6" fill="none" stroke="#7d8a89" stroke-dasharray="4 3"/>
+  <text class="b" x="125" y="620">Vibration motor driver</text>
+  <path class="w ct" d="M394 600H364V733H343"/>
+  <path class="s" d="M305 733l4-6 6 12 6-12 6 12 6-12 4 6"/><path class="s" d="M271 733H305"/>
+  <text class="t" x="311" y="752">1 kΩ</text>
+  <circle cx="264" cy="733" r="17" class="s"/><path class="s" d="M271 724v18M271 728l-14-8V697M271 738l-14 8V760"/>
+  <text class="t" x="291" y="708">NPN</text><text class="t" x="291" y="720">2N2222</text>
+  <text class="t" x="238" y="715">C</text><text class="t" x="238" y="757">E</text>
+  <circle cx="256" cy="679" r="14" class="s"/><text class="b" x="256" y="683" text-anchor="middle">M</text>
+  <text class="t" x="275" y="676">coin</text><text class="t" x="275" y="687">motor</text>
+  <path class="s" d="M256 693V720"/>
+  <path class="w pw" d="M256 665V654"/><text class="t" x="248" y="648" style="fill:#2f9e44;font-weight:700">3V3</text>
+  <path class="s" d="M256 660H194V668M194 694V697H256"/><path class="s" d="M186 686h16l-8-16zM185 670h18"/>
+  <text class="t" x="124" y="676">diode</text><text class="t" x="124" y="688">stripe up</text>
+  <path class="w gd" d="M257 760v2"/><path class="s" d="M257 762v2M250 764h14M253 768h8"/>
+</svg>
+<div class="legend">
+  <span class="item"><span class="k" style="background:var(--pwr)"></span>3V3 power (green lead)</span>
+  <span class="item"><span class="k" style="background:var(--gnd)"></span>ground (yellow lead)</span>
+  <span class="item"><span class="k" style="background:var(--spi)"></span>serial link to the Feather</span>
+  <span class="item"><span class="k" style="background:var(--ctl)"></span>control signals</span>
+  <p>3V3 / ⏚ symbols = the breadboard's 3V3 and GND rails. Team convention: green lead = + (3V3), yellow lead = − (GND).</p>
+</div>
+</div>
+
+<div class="pb"></div>
+<div class="cols">
+<div>
+<h2>Wire by wire</h2>
+<table>
+<thead><tr><th>FROM</th><th>TO</th><th>NOTE</th></tr></thead>
+<tr class="grp"><td colspan="3">Rails</td></tr>
+<tr><td class="f"><span class="dot" style="background:var(--pwr)"></span>XIAO 3V3</td><td>breadboard + rail (green lead)</td><td>everything runs on 3.3 V</td></tr>
+<tr><td class="f"><span class="dot" style="background:var(--gnd)"></span>XIAO GND</td><td>breadboard − rail (yellow lead)</td><td>one shared ground for all parts</td></tr>
+<tr class="grp"><td colspan="3">Feather 32u4 RFM69 radio (serial link, three wires)</td></tr>
+<tr><td class="f">GND</td><td>GND rail</td><td>common ground: the serial link needs it</td></tr>
+<tr><td class="f"><span class="dot" style="background:var(--spi)"></span>RX</td><td class="f">D6</td><td>crossed: the XIAO's TX goes to the Feather's RX</td></tr>
+<tr><td class="f"><span class="dot" style="background:var(--spi)"></span>TX</td><td class="f">D7</td><td>and the Feather's TX goes to the XIAO's RX</td></tr>
+<tr><td class="f">power</td><td>its own USB cable or LiPo</td><td>do not power it from the XIAO's pins</td></tr>
+<tr><td class="f">ANT</td><td>78 mm solid wire</td><td>on the Ant. pad; attach before powering on</td></tr>
+<tr><td class="f">CS 8, RST 4, IRQ 7</td><td>already wired</td><td>on the Feather; nothing to connect</td></tr>
+<tr class="grp"><td colspan="3">Blue LED button (4 legs)</td></tr>
+<tr><td class="f">switch leg 1</td><td class="f">D3</td><td>pull-up is inside the chip</td></tr>
+<tr><td class="f">switch leg 2</td><td>GND rail</td><td>pressed = D3 reads LOW</td></tr>
+<tr><td class="f">LED +</td><td>100 Ω → <b>D1</b></td><td>longer leg, or marked +</td></tr>
+<tr><td class="f">LED −</td><td>GND rail</td><td></td></tr>
+<tr class="grp"><td colspan="3">Grove Buzzer v1.3 (the module's own wire colors)</td></tr>
+<tr><td class="f">yellow (SIG)</td><td class="f">D4</td><td>tone drive. Yellow here is SIG, not ground</td></tr>
+<tr><td class="f">red (VCC)</td><td>3V3 rail</td><td></td></tr>
+<tr><td class="f">black (GND)</td><td>GND rail</td><td>white wire unused</td></tr>
+<tr class="grp"><td colspan="3">Vibration motor driver</td></tr>
+<tr><td class="f">D5</td><td>1 kΩ → transistor base</td><td>middle leg of a 2N2222</td></tr>
+<tr><td class="f">emitter</td><td>GND rail</td><td></td></tr>
+<tr><td class="f">collector</td><td>motor − (blue/black)</td><td></td></tr>
+<tr><td class="f">motor + (red)</td><td>3V3 rail</td><td></td></tr>
+<tr><td class="f">diode</td><td>across the motor</td><td>stripe to the 3V3 side</td></tr>
+</table>
+</div>
+<div>
+<div class="card warn"><h3>Never wire the motor straight to D5</h3>
+<p>A coin motor pulls 60 to 100 mA when it starts. A XIAO pin can safely give about 20 mA. The transistor does the switching, and the diode soaks up the spike when the motor stops. The firmware keeps the motor off until you change <code>PIN_MOTOR</code> to <code>D5</code> in <code>firmware/include/config.h</code>.</p></div>
+
+<div class="card warn"><h3>RFM69 = FSK, not LoRa</h3>
+<p>The RFM69 has no LoRa mode. This build speaks FSK with channel hopping, so only an FSK node can hear it. Flash the Feather with <code>pio run -e feather_radio -t upload</code> (its own USB), the XIAO with <code>pio run -e band_xiao_feather -t upload</code>, and the laptop dongle with <code>pio run -e dongle_fsk -t upload</code> on an ESP32 + RFM95W. The LoRa dongle and the dog's Feather cannot hear it. Not yet tested on air.</p>
+<p><b>Other radios:</b> a loose RFM69HCW or RFM9x breakout wires straight to the XIAO instead (SCK D7, MISO D8, MOSI D9, CS/NSS D10, RST D0, DIO0 D6; see firmware/README.md). Builds: <code>band_xiao</code> (RFM69) and <code>band_xiao_lora</code> (RFM9x).</p></div>
+
+<div class="card warn"><h3>Wire colors</h3>
+<p>Team leads: <b>green = + (3V3)</b>, <b>yellow = − (GND)</b>. Modules bring their own colors: the Grove buzzer is red VCC, black GND and <b>yellow SIG</b>, and the motor + is red. Go by the pin name, not the color, and check 3V3 and GND before you plug in USB.</p></div>
+
+<div class="card"><h3>Parts you need<br>besides the modules</h3>
+<ul><li>1 × 100 Ω resistor (button LED)</li><li>1 × 1 kΩ resistor (transistor base)</li>
+<li>1 × NPN transistor: 2N2222, BC337 or S8050</li><li>1 × diode: 1N4148 or 1N4001</li>
+<li>78 mm of solid-core wire for the antenna</li><li>Jumper wires and a breadboard</li></ul></div>
+
+<div class="card"><h3>If your button has 3 wires</h3>
+<p>Some LED buttons come as a small module with VCC, GND and SIG. Then wire SIG to <b>D3</b>, VCC to 3V3 and GND to GND, and skip the 100 Ω resistor. Tell Claude, so it sets <code>BUTTON_MODULE 1</code>.</p></div>
+
+<div class="card"><h3>Check it after wiring</h3>
+<ol>
+<li>Plug in USB. The XIAO's LED flashes and the buzzer chirps.</li>
+<li>The boot log says <code>#HELLO band radio=ok</code>. <code>radio=missing</code> means the Feather is not answering: check it has power, TX and RX are crossed, and the grounds are joined. Send <code>#R</code> to ask it again.</li>
+<li>Press the button: the log shows <code>#BTN down</code> once, and nothing when you leave it alone.</li>
+<li>Send <code>#C</code>: the code 101 plays on the LEDs and buzzer (and motor, once enabled).</li>
+</ol></div>
+
+<div class="card"><h3>Later: battery</h3>
+<p>The XIAO has BAT+ and BAT− pads underneath for a 3.7 V single-cell LiPo. It charges from USB-C. Mind the polarity: a reversed battery kills the board.</p></div>
+</div>
+</div>
+</body>
+</html>

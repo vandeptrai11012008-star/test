@@ -1,0 +1,1621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescue Band Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E0B; --panel:#111712; --well:#0C110D; --line:#26332A; --line2:#3A4A3E;
+  --text:#D7E0D4; --text-hi:#E8F0E4; --muted:#8FA392; --soft:#BFCBBC;
+  --amber:#FFB020; --green:#5BE37D; --cyan:#7DD3FC; --red:#FF6B5E; --violet:#C4A7FF;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;line-height:1.5}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:not(:disabled):hover{filter:brightness(1.25)}
+.root{min-height:100vh;padding:24px;display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
+.panel{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+.sub{color:var(--muted);font-size:12px}
+.kv{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.kv>span:first-child{color:var(--muted)}
+.chip{padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--muted)}
+.chip span{color:var(--text)}
+h1{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:38px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-hi)}
+.status{border:2px solid var(--amber);border-radius:6px;padding:18px 16px;background:var(--well);display:flex;flex-direction:column;gap:4px;transition:border-color .3s}
+.feed{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:64px;line-height:1;letter-spacing:.03em;color:var(--amber);transition:color .3s}
+.big{height:56px;border-radius:6px;font-weight:700;font-size:16px;letter-spacing:.12em}
+.threat{min-height:48px;border-radius:6px;border:1px solid var(--red);background:#2A1512;color:#FF8A7E;font-weight:500;text-align:left;padding:8px 12px}
+.threat small{font-size:11px;color:#D6A39D}
+.box{min-width:26px;text-align:center;padding:2px 6px;border:1px solid var(--line2);border-radius:3px}
+.pulse{min-width:56px;text-align:center;padding:4px 8px;border-radius:3px;border:1px solid var(--line2);background:var(--well);color:var(--soft);font-weight:700;transition:all .08s}
+.pulse.on{border-color:var(--green);background:#14301C;color:var(--green);box-shadow:0 0 12px rgba(91,227,125,.45)}
+.field{display:flex;flex-direction:column;gap:2px;padding:6px 10px;border:1px solid var(--line);border-top-width:3px;border-radius:4px;background:var(--well)}
+.field span:first-child{font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.field span:last-child{color:var(--text-hi);word-break:break-all}
+.log{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.log div{display:flex;gap:10px}
+.log .t{color:var(--muted);flex:0 0 auto}
+.err{display:none;padding:10px 14px;border:1px solid var(--red);border-radius:6px;background:#2A1512;color:#FF8A7E}
+
+/* header controls */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:var(--panel);color:var(--muted);border:0;border-right:1px solid var(--line);padding:6px 10px;font-size:12px;min-height:32px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:#14301C;color:var(--green)}
+.ctl{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+
+/* narration */
+.narr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:6px;background:var(--well);min-height:52px}
+.narr-k{font-size:11px;letter-spacing:.14em;color:var(--bg);background:var(--amber);border-radius:3px;padding:2px 8px;font-weight:700}
+.narr-who{font-weight:700}
+#narr{flex:1 1 300px;color:var(--text-hi)}
+#btnNext{display:none;min-height:36px;padding:0 16px;border-radius:4px;border:1px solid var(--green);background:#14301C;color:var(--green);font-weight:700;letter-spacing:.1em}
+#btnNext.waiting{animation:glow 1.2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 4px rgba(91,227,125,.25)}}
+
+/* map */
+.map{width:100%;height:auto;display:block;background:var(--well);border-radius:6px;border:1px solid var(--line)}
+.map text{font-family:'JetBrains Mono',ui-monospace,monospace}
+.rotor{transform-box:fill-box;transform-origin:center;animation:spin .22s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hover{transform-box:fill-box;transform-origin:center;animation:hover 3s ease-in-out infinite}
+@keyframes hover{50%{transform:scale(1.04)}}
+.hud{transform-box:fill-box;transform-origin:center}
+.hud.lock{animation:lock .5s ease-out}
+@keyframes lock{0%{transform:scale(1.5);opacity:.2}100%{transform:scale(1);opacity:1}}
+.listen{transform-box:fill-box;transform-origin:center;animation:listen 2.4s ease-out infinite}
+@keyframes listen{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+
+/* flow */
+.lane{display:flex;flex-direction:column;gap:8px}
+.lane-h{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+.lane-h b{color:var(--text-hi);letter-spacing:.06em}
+.steps{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;min-height:92px}
+.steps .ph{color:var(--muted);font-size:12px;align-self:center}
+.step{position:relative;flex:1 1 150px;max-width:230px;min-width:130px;padding:8px 10px;border:1px solid var(--line2);border-radius:5px;background:var(--well);display:flex;flex-direction:column;gap:2px;opacity:.35;transition:opacity .2s,border-color .2s,box-shadow .2s}
+.step .n{font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.step .l{color:var(--text-hi);font-weight:700}
+.step .d{color:var(--muted);font-size:11px;line-height:1.35}
+.step .v{font-size:11px;color:var(--soft);overflow-wrap:anywhere}
+.step.active{opacity:1;border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,176,32,.18)}
+.step.ok{opacity:1;border-color:#2F6B41}
+.step.ok .n::after{content:"  \2713";color:var(--green)}
+.step.bad{opacity:1;border-color:var(--red);box-shadow:0 0 0 3px rgba(255,107,94,.18)}
+.step.bad .n::after{content:"  \2715";color:var(--red)}
+.step.bad .v{color:var(--red)}
+.step.skip{opacity:.3;border-style:dashed}
+.step .v.tone-bad{color:var(--red)}
+.slots{display:flex;gap:4px;margin-top:2px}
+.slots span{font-size:10px;padding:0 5px;border:1px solid var(--line2);border-radius:3px;color:var(--muted)}
+.slots span.try{border-color:var(--amber);color:var(--amber)}
+.slots span.match{border-color:var(--green);color:var(--bg);background:var(--green)}
+.slots span.miss{border-color:var(--red);color:var(--red)}
+.verdict{align-self:center;padding:6px 12px;border-radius:4px;font-weight:700;letter-spacing:.06em;border:1px solid}
+
+/* byte strip */
+.bytes{display:grid;grid-template-columns:repeat(32,minmax(0,1fr));gap:2px}
+.byte{height:30px;display:flex;align-items:center;justify-content:center;font-size:10px;border:1px dashed var(--line);border-radius:2px;color:var(--line2);background:transparent}
+.byte.on{border-style:solid;color:var(--text-hi);animation:pop .25s ease-out}
+.byte.calc{border-style:solid;border-color:var(--line2);color:var(--muted)}
+@keyframes pop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* band close-up */
+.shake{animation:shake .09s linear infinite}
+@keyframes shake{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+#bandBtn{transform-box:fill-box;transform-origin:center;transition:transform .12s}
+#bandBtn.pressed{transform:scale(.75)}
+
+/* link-up */
+.lu-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,1.4fr) minmax(260px,1.2fr);gap:16px}
+.lu-col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.scn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;min-height:44px;padding:6px 10px;border-radius:5px;border:1px solid var(--line2);background:var(--well);color:var(--soft)}
+.scn small{font-size:11px;color:var(--muted)}
+.scn[aria-pressed="true"]{border-color:var(--green);background:#14301C;color:var(--green)}
+.scn.threat-scn[aria-pressed="true"]{border-color:var(--red);background:#2A1512;color:#FF8A7E}
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checklist li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--well);opacity:.45;transition:opacity .2s,border-color .2s}
+.checklist .ic{width:18px;height:18px;border-radius:50%;border:2px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px}
+.checklist .lb{color:var(--text-hi);font-weight:700}
+.checklist .dt{color:var(--muted);font-size:11px}
+.checklist .tm{color:var(--muted);font-size:11px;text-align:right}
+.checklist li.active{opacity:1;border-color:var(--amber)}
+.checklist li.active .ic{border-color:var(--amber);animation:glow 1.2s ease-in-out infinite}
+.checklist li.ok{opacity:1}
+.checklist li.ok .ic{border-color:var(--green);background:var(--green);color:var(--bg)}
+.checklist li.bad{opacity:1;border-color:var(--red)}
+.checklist li.bad .ic{border-color:var(--red);background:var(--red);color:var(--bg)}
+.gauge{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.gauge div{height:14px;border-radius:3px;background:#1A231C;border:1px solid var(--line)}
+.gauge-l{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.risk-word{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:44px;line-height:1;letter-spacing:.04em}
+.cmd{align-self:flex-start;padding:6px 12px;border-radius:4px;font-weight:700;letter-spacing:.08em;border:2px solid}
+.code{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.code span.c{min-width:52px;text-align:center;padding:3px 6px;border:1px solid var(--line2);border-radius:3px;font-size:11px;font-weight:700;color:var(--soft)}
+.code span.c.empty{border-style:dashed;color:var(--line2)}
+.code span.c.ok{border-color:var(--green);color:var(--green)}
+.code span.c.bad{border-color:var(--red);color:var(--red);background:#2A1512}
+
+/* header buttons */
+.hbtn{min-height:32px;padding:4px 10px;border-radius:4px;border:1px solid var(--line2);background:var(--panel);color:var(--soft);font-size:12px;letter-spacing:.06em}
+.hbtn.small{min-height:26px;padding:2px 8px;font-size:11px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* PRESENT / DETAIL */
+.present-only{display:none}
+#stage,#stageMain{display:contents}
+.mapWrap{display:block}
+body.present .detail-only{display:none !important}
+body.present .present-only{display:flex}
+body.present .root{height:100vh;padding:12px 16px;gap:10px;overflow:hidden}
+body.present h1{font-size:28px}
+body.present #stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:12px;flex:1;min-height:0}
+body.present #stageMain{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
+body.present .mapWrap{flex:none}
+body.present #flowPanel{padding:10px 12px;gap:8px;flex:1 1 auto;min-height:120px;overflow-y:auto}
+body.present #flowPanel .steps{min-height:78px}
+body.present .pbar{flex:none}
+body.present #flowPanel .step .d,body.present #flowPanel > .kv .sub{display:none}   /* details live in the tooltips */
+body.present #flowPanel .steps{min-height:64px}
+.pbar{flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.pgroup{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pbtn{min-height:40px;padding:0 14px;border-radius:5px;border:1px solid var(--line2);background:#161E17;color:var(--soft);font-weight:700;letter-spacing:.08em;font-size:12px}
+.pbtn.primary{border:2px solid var(--amber);background:#2E2410;color:var(--amber)}
+.pbtn.estop{border:2px solid var(--red);background:var(--red);color:#1a0705;font-weight:800}
+.pbtn.threat{border-color:var(--red);background:#2A1512;color:#FF8A7E}
+#pScn{min-height:40px;border-radius:5px;border:1px solid var(--line2);background:var(--well);color:var(--text);font-family:inherit;padding:0 8px}
+.pstat{display:none;grid-template-columns:1fr 1fr 1.4fr;gap:10px;flex:none}
+body.present .pstat{display:grid}
+.ptile{display:flex;flex-direction:column;gap:2px;padding:10px 16px;border:3px solid var(--line2);border-radius:8px;background:var(--panel);min-width:0;transition:border-color .3s,background-color .3s}
+.ptile b{font-family:'Barlow Condensed',sans-serif;font-size:44px;line-height:1;letter-spacing:.03em;overflow-wrap:anywhere}
+.ptile.wide b{font-size:30px;line-height:1.1}
+.ptile small{font-size:13px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ptile .pk{margin-left:0;font-size:11px}
+@media (max-width:900px){.pstat{grid-template-columns:1fr 1fr}.ptile.wide{grid-column:1/-1}.ptile b{font-size:34px}}
+.pk{font-size:10px;letter-spacing:.14em;color:var(--muted);margin-left:6px}
+
+/* timeline */
+#tlPanel{flex-direction:column;min-height:0}
+.tl{position:relative;list-style:none;margin:0;padding:0 4px 0 0;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:4px}
+.tl-empty{color:var(--muted);font-size:12px}
+.tl-i{display:grid;grid-template-columns:14px 1fr;gap:8px;padding:6px 8px;border-radius:4px;border:1px solid transparent;cursor:help;outline:none}
+.tl-i:hover,.tl-i:focus-visible{border-color:var(--line2);background:var(--well)}
+.tl-dot{width:10px;height:10px;border-radius:50%;margin-top:5px;border:2px solid var(--line2)}
+.tl-i.ok .tl-dot{background:var(--green);border-color:var(--green)}
+.tl-i.bad .tl-dot{background:var(--red);border-color:var(--red)}
+.tl-i.active .tl-dot{border-color:var(--amber);animation:glow 1.2s ease-in-out infinite}
+.tl-i.active{border-color:var(--amber);background:#1A160C}
+.tl-i.skip{opacity:.4}
+.tl-h{font-size:12px;color:var(--text-hi)}
+.tl-d{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.tl-i.bad .tl-d{color:#FF8A7E}
+.tl-pkt{margin-top:8px;padding:4px 8px;font-size:11px;letter-spacing:.1em;color:var(--muted);border-top:1px solid var(--line)}
+.tl-m{margin-top:6px;padding:8px 10px;border-radius:5px;background:var(--well);border:1px solid var(--line);font-size:12px;color:var(--text-hi)}
+.tl-m.ok{border-color:#2F6B41}.tl-m.bad{border-color:var(--red)}
+
+/* floating tooltip */
+#tip{position:fixed;z-index:50;max-width:320px;padding:8px 10px;border-radius:5px;background:#0A0E0B;border:1px solid var(--amber);color:var(--text-hi);font-size:12px;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none}
+#tip b{color:var(--amber)}
+[data-tip]{cursor:help}
+
+/* dog picker */
+dialog{border:1px solid var(--line2);border-radius:8px;background:var(--panel);color:var(--text);padding:0;width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.modal{display:flex;flex-direction:column;gap:10px;padding:18px}
+.modal h2{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--text-hi)}
+.merr{padding:8px 10px;border:1px solid var(--red);border-radius:5px;background:#2A1512;color:#FF8A7E;font-size:12px}
+.devlist{list-style:none;margin:0;padding:0;max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.devlist label{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:5px;background:var(--well);cursor:pointer}
+.devlist input:checked + span{color:var(--green)}
+.devlist .addr{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+.badge{font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--violet);color:var(--violet);margin-left:6px}
+#dogIp{min-height:40px;border-radius:5px;border:1px solid var(--line2);background:var(--well);color:var(--text);font-family:inherit;padding:0 10px}
+.mact{display:flex;justify-content:space-between;gap:8px}
+
+@media (max-width:1000px){.lu-grid{grid-template-columns:1fr}
+  body.present .root{height:auto;overflow:visible}
+  body.present #stage{grid-template-columns:1fr}
+  body.present .mapWrap{flex:none}
+  body.present .tl{max-height:360px}}
+@media (max-width:900px){.bytes{grid-template-columns:repeat(16,minmax(0,1fr))}}
+@media (max-width:640px){.root{padding:16px}h1{font-size:30px}.feed{font-size:48px}.step{max-width:none}}
+@media (prefers-reduced-motion:reduce){.rotor,.hover,.listen,#btnNext.waiting{animation:none}}
+</style>
+</head>
+<body>
+<div class="root">
+
+<header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px">
+  <div style="display:flex;flex-direction:column;gap:2px">
+    <h1>Rescue check-in band</h1>
+    <div class="sub detail-only">@@RADIO@@ · 32-byte packets · HMAC-SHA256 truncated to 8 bytes · 1 hour slots, plus or minus 1 · Python protocol, live</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <div class="ctl">VIEW <div class="seg" id="segView"><button data-v="present" aria-pressed="true">PRESENT</button><button data-v="detail" aria-pressed="false">DETAIL</button></div></div>
+    <div class="ctl">MODE <div class="seg" id="segMode"><button data-v="auto" aria-pressed="true">AUTO</button><button data-v="step" aria-pressed="false">STEP</button></div></div>
+    <div class="ctl">SPEED <div class="seg" id="segSpeed"><button data-v="0.5" aria-pressed="false">0.5x</button><button data-v="1" aria-pressed="true">1x</button><button data-v="2" aria-pressed="false">2x</button></div></div>
+    <div class="chip detail-only">UTC <span id="utc">--:--Z</span></div>
+    <div class="chip detail-only">SLOT <span id="slot">-</span></div>
+    <div class="chip detail-only">KEY <span>demo, 128 bit</span></div>
+    <div class="chip" id="hwChip">BAND <span>simulated</span></div>
+    <div class="chip" id="hopChip" style="display:none" data-tip="Live hop channel from the keyed schedule: the wristband, the dog and the drone radio are on this channel now">HOP</div>
+    <div class="chip" id="dogChip" style="display:none">MECHDOG</div>
+    <div class="chip" id="droneChip" style="display:none">TELLO</div>
+    <button class="hbtn" id="btnBand" title="Find and connect the wristband over Bluetooth">CONNECT BAND</button>
+    <button class="hbtn" id="btnDog" title="Find and connect a MechDog over Bluetooth or Wi-Fi">CONNECT DOG</button>
+  </div>
+</header>
+
+<div class="err" id="err">Lost contact with the Python console server. Is <code>python3 -m rescue.console</code> still running?</div>
+
+<div id="stage"><div id="stageMain">
+<div class="pstat present-only" aria-live="polite" aria-label="What the drone sees">
+  <div class="ptile" id="tFeed" tabindex="0" data-tip="What the drone operator's screen says about the person on the ground. It only says FRIENDLY after the person's wristband proves it has the secret key. Until then it always says UNKNOWN.">
+    <span class="pk">DRONE SEES</span><b id="pFeed">UNKNOWN</b><small id="pFeedSub">no proof yet</small>
+  </div>
+  <div class="ptile" id="tRisk" tabindex="0" data-tip="How likely it is that our side hurts one of our own people by mistake right now. It drops as the person is recognized, first by radio from far away, then again up close.">
+    <span class="pk">FRIENDLY-FIRE RISK</span><b id="pRisk">-</b><small id="pRiskSub">start a link-up to rate it</small>
+  </div>
+  <div class="ptile wide" id="tCmd" tabindex="0" data-tip="What the drone and the dog are told to do right now.">
+    <span class="pk">ORDER</span><b id="pCmd">STANDBY</b><small id="pCmdSub">waiting</small>
+  </div>
+</div>
+<div class="narr" aria-live="polite">
+  <span class="narr-k">NOW</span>
+  <span id="narr">Idle. Press CHALLENGE to interrogate the contact, or try a threat scenario.</span>
+  <button id="btnNext" title="Next step (Right arrow or N)">NEXT &#9656;</button>
+</div>
+
+<div class="mapWrap"><svg class="map" id="map" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1200 340" role="img" aria-label="Top-down map: drone on the left, person with band on the right, attacker in between">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#141D17" stroke-width="1"/></pattern>
+    <pattern id="grid5" width="200" height="200" patternUnits="userSpaceOnUse"><path d="M200 0H0V200" fill="none" stroke="#1B271F" stroke-width="1"/></pattern>
+    <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+    <clipPath id="mapClip"><rect width="1200" height="340" rx="6"/></clipPath>
+  </defs>
+  <g clip-path="url(#mapClip)">
+  <rect width="1200" height="340" fill="#0C110D"/>
+  <rect width="1200" height="340" fill="url(#grid)"/>
+  <rect width="1200" height="340" fill="url(#grid5)"/>
+  <!-- terrain -->
+  <path d="M-10 300 C 200 250, 330 330, 520 240 S 820 90, 1210 60" fill="none" stroke="#18221B" stroke-width="22"/>
+  <path d="M-10 300 C 200 250, 330 330, 520 240 S 820 90, 1210 60" fill="none" stroke="#243126" stroke-width="1.5" stroke-dasharray="10 12"/>
+  <path d="M760 300 c40 -40 120 -50 170 -20 s 60 60 0 70 s -150 10 -170 -50z" fill="none" stroke="#17241B" stroke-width="1.5"/>
+  <path d="M740 316 c60 -70 170 -80 230 -30 s 80 80 -10 90" fill="none" stroke="#15201A" stroke-width="1.5"/>
+  <g fill="#122017" stroke="#1F3326" stroke-width="1.5">
+    <circle cx="420" cy="70" r="16"/><circle cx="446" cy="58" r="12"/><circle cx="440" cy="86" r="11"/>
+    <circle cx="1080" cy="250" r="15"/><circle cx="1104" cy="268" r="12"/><circle cx="1060" cy="276" r="10"/>
+    <circle cx="80" cy="60" r="12"/><circle cx="100" cy="76" r="9"/>
+    <circle cx="820" cy="40" r="10"/><circle cx="840" cy="30" r="8"/>
+  </g>
+  <!-- link-up phase lines around the contact, 1 px = 0.5 m -->
+  <g fill="none" stroke-dasharray="6 8" stroke-width="1.5">
+    <circle id="ringFar" cx="990" cy="150" r="420" stroke="#3A3018"/>
+    <circle id="ringNear" cx="990" cy="150" r="110" stroke="#1C3440"/>
+    <circle id="ringLink" cx="990" cy="150" r="42" stroke="#1F3A28"/>
+  </g>
+  <text id="lblFar" x="572" y="252" font-size="10" fill="#6E5A2C" text-anchor="end" letter-spacing="1">FAR LINE 210 m</text>
+  <text id="lblNear" x="906" y="236" font-size="10" fill="#3C6474" text-anchor="end" letter-spacing="1">NEAR LINE 55 m</text>
+  <!-- camera footprint -->
+  <polygon id="fov" points="214,170 1070,82 1070,222" fill="#FFB020" opacity="0.05"/>
+  <polyline id="fovEdge" points="1070,82 214,170 1070,222" fill="none" stroke="#FFB020" stroke-opacity="0.25" stroke-dasharray="3 6"/>
+
+  <g id="waves"></g>
+
+  <!-- attacker -->
+  <g id="attacker" transform="translate(600 282)" opacity="0.5">
+    <circle class="listen" r="22" fill="none" stroke="#FF6B5E" stroke-width="1"/>
+    <circle r="11" fill="#2A1512" stroke="#FF6B5E" stroke-width="2"/>
+    <circle r="4" fill="#FF6B5E"/>
+    <line x1="8" y1="-8" x2="22" y2="-26" stroke="#FF6B5E" stroke-width="2"/>
+    <line x1="16" y1="-26" x2="28" y2="-20" stroke="#FF6B5E" stroke-width="2"/>
+    <line x1="14" y1="-20" x2="26" y2="-14" stroke="#FF6B5E" stroke-width="2"/>
+    <text x="0" y="32" font-size="11" fill="#FF8A7E" text-anchor="middle" font-weight="700">ATTACKER</text>
+    <text x="0" y="46" font-size="10" fill="#D6A39D" text-anchor="middle">no key, listening</text>
+    <text id="captured" x="0" y="-38" font-size="11" fill="#FF6B5E" text-anchor="middle" font-weight="700" opacity="0">CAPTURED REPLY</text>
+  </g>
+
+  <!-- person with band -->
+  <g transform="translate(990 150)">
+    <g id="hud" class="hud">
+      <path d="M-40 -28 v-12 h12 M28 -40 h12 v12 M40 28 v12 h-12 M-28 40 h-12 v-12" fill="none" stroke="#FFB020" stroke-width="2.5" id="hudBrackets"/>
+      <rect id="hudTag" x="-40" y="-64" width="80" height="18" rx="3" fill="#FFB020"/>
+      <text id="hudText" x="0" y="-51" font-size="11" font-weight="700" fill="#0A0E0B" text-anchor="middle">UNKNOWN</text>
+    </g>
+    <ellipse rx="17" ry="10" fill="#1B2A1F" stroke="#5E7A66" stroke-width="2"/>
+    <circle r="7.5" fill="#2A3A2E" stroke="#8FA392" stroke-width="2"/>
+    <rect x="17" y="2" width="9" height="7" rx="2" fill="#12331F" stroke="#3E6B4A"/>
+    <circle id="mapLed" cx="21.5" cy="5.5" r="2.5" fill="#1D2A20"/>
+    <circle id="mapLedGlow" cx="21.5" cy="5.5" r="9" fill="#5BE37D" opacity="0" filter="url(#blur6)"/>
+    <text x="0" y="62" font-size="11" fill="#BFCBBC" text-anchor="middle" font-weight="700">PERSON</text>
+    <text x="0" y="76" font-size="10" fill="#8FA392" text-anchor="middle">rescue band on wrist</text>
+  </g>
+
+  <!-- drone -->
+  <g id="droneG" transform="translate(200 170)">
+    <text id="droneRange" x="0" y="-44" font-size="11" font-weight="700" fill="#E8F0E4" text-anchor="middle"></text>
+    <ellipse class="hover" rx="40" ry="40" fill="#000" opacity="0.25" filter="url(#blur6)"/>
+    <g stroke="#5E7A66" stroke-width="4" stroke-linecap="round"><line x1="-22" y1="-22" x2="22" y2="22"/><line x1="-22" y1="22" x2="22" y2="-22"/></g>
+    <g fill="none" stroke="#3E6B4A" stroke-width="1.5">
+      <circle cx="-22" cy="-22" r="13"/><circle cx="22" cy="-22" r="13"/><circle cx="-22" cy="22" r="13"/><circle cx="22" cy="22" r="13"/>
+    </g>
+    <g stroke="#BFCBBC" stroke-width="2.5" stroke-linecap="round" opacity="0.8">
+      <g class="rotor"><line x1="-33" y1="-22" x2="-11" y2="-22"/></g>
+      <g class="rotor"><line x1="11" y1="-22" x2="33" y2="-22"/></g>
+      <g class="rotor"><line x1="-33" y1="22" x2="-11" y2="22"/></g>
+      <g class="rotor"><line x1="11" y1="22" x2="33" y2="22"/></g>
+    </g>
+    <rect x="-11" y="-11" width="22" height="22" rx="5" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+    <path d="M14 -5 L22 0 L14 5z" fill="#5BE37D"/>
+    <g id="droneLbl">
+      <text x="0" y="56" font-size="11" fill="#BFCBBC" text-anchor="middle" font-weight="700">DRONE</text>
+      <text x="0" y="70" font-size="10" fill="#8FA392" text-anchor="middle">interrogator + @@SHORT@@ dongle</text>
+    </g>
+  </g>
+
+  <!-- dog (ground robot, top-down), carries its own @@SHORT@@ radio for the near check -->
+  <g id="dogG" transform="translate(560 200)" opacity="0">
+    <g stroke="#C4A7FF" stroke-width="3" stroke-linecap="round">
+      <line x1="-10" y1="-7" x2="-16" y2="-15"/><line x1="10" y1="-7" x2="16" y2="-15"/>
+      <line x1="-10" y1="7" x2="-16" y2="15"/><line x1="10" y1="7" x2="16" y2="15"/>
+    </g>
+    <rect x="-14" y="-8" width="28" height="16" rx="6" fill="#221B33" stroke="#C4A7FF" stroke-width="2"/>
+    <path id="dogCone" d="M24 0 L70 -18 A48 48 0 0 1 70 18 Z" fill="#7DD3FC" opacity="0"/>
+    <circle cx="19" cy="0" r="6" fill="#221B33" stroke="#C4A7FF" stroke-width="2"/>
+    <circle id="dogEyeL" cx="23" cy="-3" r="2.2" fill="#1D2A20"/><circle id="dogEyeR" cx="23" cy="3" r="2.2" fill="#1D2A20"/>
+    <text id="dogSonar" x="0" y="44" font-size="10" fill="#7DD3FC" text-anchor="middle"></text>
+    <line x1="-4" y1="-8" x2="-8" y2="-22" stroke="#C4A7FF" stroke-width="1.5"/><circle cx="-8" cy="-23" r="2" fill="#C4A7FF"/>
+    <text id="dogRange" x="0" y="-30" font-size="11" font-weight="700" fill="#E8F0E4" text-anchor="middle"></text>
+    <text id="dogLbl" x="0" y="30" font-size="11" fill="#C4A7FF" text-anchor="middle" font-weight="700">DOG</text>
+  </g>
+
+  <g id="pktLayer"></g>
+  <g id="callouts" aria-hidden="true"></g>
+  </g>
+
+  <!-- map furniture -->
+  <text x="16" y="24" font-size="10" fill="#3E5A47" letter-spacing="1.5">TOP-DOWN · SIMULATED AO · @@BROADCAST@@</text>
+  <g transform="translate(1160 34)"><path d="M0 -14 L6 4 L0 0 L-6 4z" fill="#3E5A47"/><text y="18" font-size="10" fill="#3E5A47" text-anchor="middle">N</text></g>
+  <g transform="translate(16 318)"><line x1="0" y1="0" x2="200" y2="0" stroke="#3E5A47" stroke-width="2"/><line x1="0" y1="-5" x2="0" y2="5" stroke="#3E5A47"/><line x1="100" y1="-4" x2="100" y2="4" stroke="#3E5A47"/><line x1="200" y1="-5" x2="200" y2="5" stroke="#3E5A47"/><text x="206" y="4" font-size="10" fill="#3E5A47">100 m</text></g>
+</svg></div>
+
+<div class="pbar present-only" aria-label="Demo controls">
+  <div class="pgroup">
+    <label class="sr" for="pScn">Scenario</label>
+    <select id="pScn" title="Link-up scenario">
+      <option value="normal">Normal link-up</option>
+      <option value="noreply">No reply at far</option>
+      <option value="drift">Band clock drift</option>
+      <option value="replay">Replay at far</option>
+      <option value="impostor">Impostor at near</option>
+    </select>
+    <button class="pbtn primary" id="pLinkup">START LINK-UP</button>
+  </div>
+  <div class="pgroup">
+    <button class="pbtn" id="pChallenge" title="Drone challenges the band once">CHALLENGE</button>
+    <button class="pbtn" id="pAlive" title="Wearer presses I'M ALIVE on the band">ALIVE</button>
+    <button class="pbtn threat" id="pSpoof" title="Attacker sends a challenge signed with the wrong key">SPOOF</button>
+    <button class="pbtn threat" id="pReplay" title="Attacker replays a captured reply">REPLAY</button>
+    <button class="pbtn" id="pReset">RESET</button>
+  </div>
+  <div class="pgroup" id="droneCtl" style="display:none">
+    <button class="pbtn" id="pLand" title="Land the Tello now">LAND</button>
+    <button class="pbtn estop" id="pEstop" title="Cut the Tello's motors now (key X). It drops.">EMERGENCY STOP</button>
+  </div>
+</div>
+</div>
+
+<aside class="panel present-only" id="tlPanel" aria-label="Live timeline">
+  <div class="kv"><span class="eyebrow">LIVE TIMELINE</span><button class="hbtn small" id="tlClear">CLEAR</button></div>
+  <div class="sub">Every step as it happens. Hover or focus a step for what it means.</div>
+  <ol class="tl" id="timeline"><li class="tl-empty">Press START LINK-UP or CHALLENGE.</li></ol>
+</aside>
+</div>
+
+<section class="panel detail-only" aria-label="Link-up">
+  <div><div class="eyebrow">LINK-UP: FAR AND NEAR RECOGNITION</div>
+  <div class="sub">Closing in on someone is when mistaken identity matters most. Far: the drone's signed @@SHORT@@ check at about 210 m. Near: the ground dog's own close-range challenge at about 55 m, which must be valid, strong and fast enough that no relay is in the path.</div></div>
+  <div class="lu-grid">
+    <div class="lu-col">
+      <div class="eyebrow">SCENARIO</div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="scnList">
+        <button class="scn" data-v="normal" aria-pressed="true">Normal link-up<small>Team member, healthy band</small></button>
+        <button class="scn threat-scn" data-v="noreply" aria-pressed="false">No reply at far<small>Band off or out of range</small></button>
+        <button class="scn threat-scn" data-v="drift" aria-pressed="false">Band clock drift<small>Band clock 2 hours off</small></button>
+        <button class="scn threat-scn" data-v="replay" aria-pressed="false">Replay at far<small>Attacker answers with an old reply</small></button>
+        <button class="scn threat-scn" data-v="impostor" aria-pressed="false">Impostor at near<small>Relayed radio, wrong person on site</small></button>
+      </div>
+      <button class="big" id="btnLinkup" style="border:2px solid var(--amber);background:#2E2410;color:var(--amber)">START LINK-UP</button>
+    </div>
+    <div class="lu-col">
+      <div class="kv"><span class="eyebrow">CHECKLIST</span><span class="sub" id="luName">no link-up yet</span></div>
+      <ol class="checklist" id="luSteps"></ol>
+    </div>
+    <div class="lu-col">
+      <div class="kv"><span class="eyebrow">IDENTIFICATION RISK (ILLUSTRATIVE)</span><span class="sub">RANGE <span id="luRange" style="color:var(--text-hi)">-</span></span></div>
+      <div class="risk-word" id="riskWord" style="color:var(--muted)">STANDBY</div>
+      <div class="gauge" id="gauge"><div></div><div></div><div></div></div>
+      <div class="gauge-l"><span>HIGH</span><span style="text-align:center">MEDIUM</span><span style="text-align:right">LOW</span></div>
+      <div style="color:var(--soft)" id="riskCaption">Pick a scenario and press START LINK-UP.</div>
+      <div class="cmd" id="cmd" style="color:var(--muted);border-color:var(--line2)">STANDBY</div>
+      <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px">
+        <div class="eyebrow">NEAR RECOGNITION: DOG'S CLOSE-RANGE CHALLENGE</div>
+        <div class="kv"><span>TAG + NONCE</span><span class="code" id="nearTag"></span></div>
+        <div class="kv"><span>SIGNAL (close?)</span><span class="code" id="nearRssi"></span></div>
+        <div class="kv"><span>ROUND TRIP (relay?)</span><span class="code" id="nearRtt"></span></div>
+        <div style="font-weight:700" id="nearResult"></div>
+        <div class="eyebrow" style="margin-top:4px">DOG SENSORS</div>
+        <div class="kv"><span>EYES (RGB)</span><span class="code" id="eyesRow"></span></div>
+        <div class="kv"><span>ULTRASONIC</span><span class="code" id="sonarRow"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="row detail-only">
+  <section class="panel" aria-label="Drone operator feed" style="flex:1 1 400px">
+    <div><div class="eyebrow">DRONE OPERATOR FEED</div><div class="sub">rescue.interrogator.Interrogator over a LoopbackRadio</div></div>
+    <div class="status" id="statusBox" aria-live="polite">
+      <div class="eyebrow">TARGET STATUS</div>
+      <div class="feed" id="feed">UNKNOWN</div>
+      <div style="color:var(--soft)" id="caption">No verified exchange</div>
+    </div>
+    <button class="big" id="btnChallenge" style="border:2px solid var(--green);background:#14301C;color:var(--green)">CHALLENGE</button>
+    <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="kv"><span>OUTSTANDING NONCE</span><span id="outNonce">none</span></div>
+      <div class="kv"><span>VERIFIED EXCHANGES</span><span id="exchanges">0</span></div>
+      <div class="kv"><span>HOUR BLINK CODE</span><span style="display:flex;gap:6px" id="codeBoxes"></span></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Threat scenarios" style="flex:1 1 280px">
+    <div><div class="eyebrow">ON THE AIR, @@UP@@</div><div class="sub">Broadcast radio: everyone in range hears every packet, including the attacker</div></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="eyebrow">THREAT SCENARIOS</div>
+      <button class="threat" id="btnSpoof">Spoofed drone challenge<br><small>Attacker signs with the wrong key</small></button>
+      <button class="threat" id="btnReplay">Replay captured reply<br><small>Needs one finished exchange first</small></button>
+      <button id="btnReset" style="min-height:44px;border-radius:6px;border:1px solid var(--line2);background:#161E17;color:var(--soft);font-weight:500">Reset simulation</button>
+    </div>
+    <div class="sub" style="border-top:1px solid var(--line);padding-top:12px">Rule: the feed never shows FRIENDLY without a verified exchange. Bad or replayed replies show UNKNOWN.</div>
+  </section>
+
+  <section class="panel" aria-label="Wearer's band" style="flex:1 1 400px">
+    <div><div class="eyebrow">WEARER'S BAND</div><div class="sub">rescue.band.Band: ESP32 + RFM95, buzzer, LED, button, LiPo</div></div>
+    <svg viewBox="0 0 360 150" role="img" aria-label="Wristband with board, LED, buzzer and button" style="width:100%;height:auto;max-height:190px;background:var(--well);border-radius:6px">
+      <defs><filter id="ledBlur" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="7"/></filter></defs>
+      <g id="bandBody">
+        <rect x="10" y="58" width="340" height="38" rx="19" fill="#1B221C" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="28" y1="68" x2="100" y2="68" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="28" y1="78" x2="100" y2="78" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="28" y1="88" x2="100" y2="88" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="260" y1="68" x2="332" y2="68" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="260" y1="78" x2="332" y2="78" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="260" y1="88" x2="332" y2="88" stroke="#2F3D33" stroke-width="2"/>
+        <line x1="222" y1="34" x2="240" y2="8" stroke="#8FA392" stroke-width="2"/>
+        <rect x="120" y="32" width="120" height="92" rx="8" fill="#12331F" stroke="#3E6B4A" stroke-width="2"/>
+        <circle id="ledGlow" cx="150" cy="60" r="18" fill="#5BE37D" opacity="0" filter="url(#ledBlur)"/>
+        <circle id="led" cx="150" cy="60" r="10" fill="#1D2A20" stroke="#3E6B4A" stroke-width="2"/>
+        <circle cx="205" cy="62" r="14" fill="#1A1F1B" stroke="#8FA392" stroke-width="2"/>
+        <path id="buzzWaves" d="M226 50 q10 12 0 24 M234 44 q16 18 0 36" fill="none" stroke="#FFB020" stroke-width="2.5" opacity="0.12"/>
+        <circle id="btnRipple" cx="180" cy="104" r="9" fill="none" stroke="#7DD3FC" stroke-width="2" opacity="0"/>
+        <circle id="bandBtn" cx="180" cy="104" r="9" fill="#C9D3C5" stroke="#3E6B4A" stroke-width="2"/>
+        <text x="134" y="46" font-size="8" fill="#9FB3A2" font-family="monospace">LED</text>
+        <text x="193" y="48" font-size="8" fill="#9FB3A2" font-family="monospace">BUZ</text>
+        <text x="160" y="120" font-size="8" fill="#9FB3A2" font-family="monospace">BTN</text>
+      </g>
+    </svg>
+    <div class="kv"><span>STATUS</span><span style="color:var(--text-hi);font-weight:700" id="bandStatus">LISTENING (wake-on-radio)</span></div>
+    <div class="kv"><span>BLINK PULSES</span><span style="display:flex;gap:8px" id="pulseBoxes"></span></div>
+    <div class="kv"><span>BUZZER</span><span style="font-weight:700;color:var(--muted)" id="buzzText">quiet</span></div>
+    <div class="kv"><span>REJECTED PACKETS</span><span id="rejects">0</span></div>
+    <button class="big" id="btnAlive" style="border:2px solid var(--cyan);background:#10283A;color:var(--cyan)">PRESS: I'M ALIVE</button>
+  </section>
+</div>
+
+<section class="panel" id="flowPanel" aria-label="Protocol flow">
+  <div class="kv"><div class="eyebrow">PROTOCOL FLOW, STEP BY STEP</div><div class="sub">Each step is what the Python code did for this packet</div></div>
+  <div class="lane">
+    <div class="lane-h"><span class="eyebrow">SENDER</span><b id="txTitle">-</b></div>
+    <div class="steps" id="txSteps"><span class="ph">Waiting for a packet.</span></div>
+  </div>
+  <div class="lane" style="border-top:1px solid var(--line);padding-top:12px">
+    <div class="lane-h"><span class="eyebrow">RECEIVER</span><b id="rxTitle">-</b></div>
+    <div class="steps" id="rxSteps"><span class="ph">Waiting for the packet to land.</span></div>
+  </div>
+</section>
+
+<div class="row detail-only">
+  <section class="panel" aria-label="Packet inspector" style="flex:2 1 560px;gap:12px">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px">
+      <div class="eyebrow">PACKET INSPECTOR, REAL HMAC-SHA256</div>
+      <div style="color:var(--text-hi);font-weight:700" id="inspTitle">No packet yet</div>
+    </div>
+    <div class="sub" id="inspRoute">Press CHALLENGE to start the exchange.</div>
+    <div class="bytes" id="bytes" aria-label="The 32 bytes of the packet"></div>
+    <div class="legend" id="legend"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px" id="inspFields"></div>
+    <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:10px" id="inspChecks"></div>
+  </section>
+
+  <section class="panel" aria-label="Event log" style="flex:1 1 360px;gap:10px">
+    <div class="eyebrow">EVENT LOG</div>
+    <div class="log" id="log"></div>
+  </section>
+</div>
+</div>
+
+<div id="tip" role="tooltip" hidden></div>
+
+<dialog id="bandModal" aria-labelledby="bandModalTitle">
+  <form method="dialog" class="modal">
+    <div class="kv"><h2 id="bandModalTitle">Connect the wristband</h2><button class="hbtn" value="cancel" aria-label="Close">CLOSE</button></div>
+    <div class="sub">Bluetooth link to the real band: challenges, I'M ALIVE and the clock go over it. Range is about a room; @@SHORT@@ is the real check-in link.</div>
+    <div class="merr" id="bandModalErr" hidden></div>
+    <div class="kv"><span class="eyebrow">NEARBY BLUETOOTH</span><span><button type="button" class="hbtn small" id="bandAll">SHOW ALL</button> <button type="button" class="hbtn small" id="bandRescan">RESCAN</button></span></div>
+    <ul class="devlist" id="bandList"><li class="sub">Not scanned yet.</li></ul>
+    <div class="mact"><button type="button" class="hbtn" id="bandDisconnect">DISCONNECT</button><button type="button" class="pbtn primary" id="bandConnect">CONNECT</button></div>
+    <div class="sub" id="bandModalStatus"></div>
+  </form>
+</dialog>
+
+<dialog id="dogModal" aria-labelledby="dogModalTitle">
+  <form method="dialog" class="modal">
+    <div class="kv"><h2 id="dogModalTitle">Connect a MechDog</h2><button class="hbtn" value="cancel" aria-label="Close">CLOSE</button></div>
+    <div class="sub">Close the Hiwonder phone app first: the dog accepts one Bluetooth connection at a time.</div>
+    <div class="merr" id="dogModalErr" hidden></div>
+    <div class="kv"><span class="eyebrow">NEARBY BLUETOOTH</span><span><button type="button" class="hbtn small" id="dogAll">SHOW ALL</button> <button type="button" class="hbtn small" id="dogRescan">RESCAN</button></span></div>
+    <ul class="devlist" id="dogList"><li class="sub">Not scanned yet.</li></ul>
+    <label class="eyebrow" for="dogIp">OR A WI-FI DOG (our script on the dog)</label>
+    <input id="dogIp" placeholder="192.168.4.1" autocomplete="off" inputmode="decimal">
+    <div class="mact"><button type="button" class="hbtn" id="dogDisconnect">DISCONNECT</button><button type="button" class="pbtn primary" id="dogConnect">CONNECT</button></div>
+    <div class="sub" id="dogModalStatus"></div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  let SPEED = Math.max(0.25, parseFloat(qs.get('speed')) || 1);
+  let STEP = qs.get('mode') === 'step';
+  const C = { amber: '#FFB020', green: '#5BE37D', cyan: '#7DD3FC', red: '#FF6B5E', soft: '#BFCBBC', plain: '#D7E0D4', violet: '#C4A7FF' };
+  const TONE = { ok: C.green, bad: C.red, warn: C.amber, alive: C.cyan, info: C.soft, plain: C.plain };
+  const FIELDS = [ // name, start, end, color
+    ['TYPE', 0, 1, C.amber], ['VER', 1, 2, '#8FA392'], ['NONCE', 2, 6, C.cyan],
+    ['SLOT16', 6, 8, C.violet], ['HMAC8', 8, 16, C.green], ['PAD', 16, 32, '#3A4A3E']];
+  const POS = { DRONE: [200, 170], BAND: [990, 150], ATTACKER: [600, 282], DOG: [560, 200] };
+  const HOME = [200, 170], START = [110, 170];
+  const FAR_D = 428, NEAR_D = 116, LINK_D = 78;   // map px from the contact; 1 px = 0.5 m
+  const RISK_COL = { HIGH: '#FF6B5E', MEDIUM: '#FFB020', LOW: '#5BE37D' };
+  let scenario = 'normal';
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  // ---- explanations: tooltips on every step, timeline and flow cards alike ---------
+  const EXPLAIN = {
+    'Nonce': 'A brand-new random number for this one question. The answer has to repeat it back, so nobody can reuse an old recorded answer.',
+    'Slot': 'Which hour it is right now. Stamping the hour on the message means it only works for about an hour, like a ticket that expires.',
+    'HMAC-SHA256': 'A secret stamp made from the message plus a secret key that only our side has. Without the key, you cannot make a stamp that matches.',
+    'Truncate': 'We only send the first 8 bytes of the stamp so the message stays small. Guessing them by luck is like winning the lottery twice in a row.',
+    'Frame': 'Everything packed into one small message of exactly 32 bytes, always the same shape.',
+    'Transmit': 'Sent out by radio. Radio is like shouting: anyone nearby can hear it, including the enemy. That is why the secret stamp matters.',
+    'Button': 'The person wearing the band presses its button to say "I am alive" or "I need help".',
+    'Sign': 'The band puts its secret stamp on the message, using the key and the last question it answered.',
+    'Sniff': 'The enemy secretly recorded a real answer earlier. They can copy it, but they cannot change it without the key.',
+    'Copy': 'The enemy plays back the exact recorded message. The stamp is real, so the only thing that catches it is the "already used" check.',
+    'Decode': 'Is it exactly the right size and shape? If not, the band ignores it and says nothing.',
+    'Type': 'The band only answers questions. Any other kind of message gets ignored.',
+    'Fresh nonce': 'The band remembers the questions it already answered. Ask the same one again and it stays quiet.',
+    'Tag in slot window': 'The band makes its own stamp with the key and compares. It allows the clock to be off by up to an hour. No match means the sender does not have the key, so the band stays silent.',
+    'Buzz + blink': 'It checked out: the band buzzes and flashes this hour\'s secret pattern, so the wearer knows a friendly drone is asking.',
+    'Sign reply': 'The band answers with its own secret stamp and the same random number. Only a real band with the key can do this.',
+    'Nonce matches': 'The answer must repeat the random number from the question the drone just asked. Anything else is an old answer being replayed.',
+    'First reply': 'Each answer only counts once. A second copy of the same answer is a replay, so the drone marks it UNKNOWN.',
+    'ALIVE allowed': '"I am alive" only counts after the band has proved itself, and only once.',
+    'Is a reply': 'The drone only listens to answers and "I am alive" messages, nothing else.',
+    'Update feed': 'Only now does the operator\'s screen change. If anything went wrong it stays on UNKNOWN.',
+    'Exchange state': 'Which question is still waiting for an answer, and whether "I am alive" has been used yet.',
+    'Signal strength': 'The dog is right next to the person, so their band should sound loud on the radio. A faint signal means the band is actually far away.',
+    'Round trip': 'How fast the answer comes back. A fake that passes the message along to a real band far away adds delay. Too slow means someone is cheating.',
+    'Real band': 'This went to the real wristband hardware, and its answer is checked against our reference code, byte by byte.',
+    'Listen': 'Nobody answered. The band might be off, too far away, or not there at all.',
+  };
+  const VERDICT_TIP = {
+    'BAND ok': 'The band checked the question, it was real, and it answered.',
+    'BAND bad': 'The band stays totally silent, so the enemy learns nothing, not even that a band is there.',
+    'DRONE ok': 'Proved: the operator\'s screen can now say this person is one of ours.',
+    'DRONE bad': 'Not proved, so the screen says UNKNOWN. We never say FRIENDLY without proof.',
+    'DOG ok': 'The band is close and answering directly, so the dog can walk up.',
+    'DOG bad': 'The close-up check failed, so the dog stops or backs away.',
+  };
+  const LINKUP_TIP = {
+    approach_far: 'From far away the drone cannot tell friend from enemy by looking, so it stops and asks by radio.',
+    far_sent: 'The drone sends a secret-stamped radio question with a brand-new random number.',
+    far_verified: 'A correct answer means the band has our secret key. The drone stays back and watches.',
+    alive: 'The person felt the band buzz. They press the button to say "I am alive and OK". The band signs it with the drone\'s own random number, so it only counts once and only after the band proved itself.',
+    approach_near: 'The robot dog walks in. It carries its own radio.',
+    near_sent: 'Up close, the dog asks the band itself and starts a stopwatch.',
+    near_verified: 'Right stamp, loud signal and a fast answer: the band is really here, not a fake passing messages along.',
+    countersign: 'The dog flashes this hour\'s secret pattern on its eyes, so the person can check the robot is ours too.',
+    closing: 'The dog walks closer using its distance sensor and stops about an arm\'s length away.',
+    linkup: 'Recognized twice, from far away and up close: link-up done.',
+  };
+  const tipFor = (label) => EXPLAIN[label] || '';
+  const FEED_SUB = { UNKNOWN: 'no proof yet: treat with caution', FRIENDLY: 'proved it is one of ours', ALIVE: 'a friend pressed I\'M ALIVE' };
+  const RISK_SUB = { HIGH: 'could easily hit one of our own', MEDIUM: 'recognized by radio, not yet up close', LOW: 'recognized twice: far and near' };
+
+  // One floating tooltip for anything with data-tip (hover or keyboard focus).
+  const tipEl = document.getElementById('tip');
+  function showTip(target) {
+    const text = target.getAttribute('data-tip');
+    if (!text) return;
+    tipEl.textContent = text;
+    tipEl.hidden = false;
+    const r = target.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    let x = r.left - w - 10, y = r.top;                   // prefer the left side (timeline is on the right)
+    if (x < 8) { x = Math.min(window.innerWidth - w - 8, r.left); y = r.bottom + 8; }
+    if (y + h > window.innerHeight - 8) y = Math.max(8, window.innerHeight - h - 8);
+    tipEl.style.left = x + 'px';
+    tipEl.style.top = y + 'px';
+  }
+  const hideTip = () => { tipEl.hidden = true; };
+  document.addEventListener('mouseover', (e) => { const t = e.target.closest('[data-tip]'); if (t) showTip(t); });
+  document.addEventListener('mouseout', (e) => { if (e.target.closest('[data-tip]')) hideTip(); });
+  document.addEventListener('focusin', (e) => { const t = e.target.closest('[data-tip]'); if (t) showTip(t); });
+  document.addEventListener('focusout', hideTip);
+
+  // ---- live timeline (presentation view) ------------------------------------------
+  const tl = document.getElementById('timeline');
+  function tlScroll(li) {
+    const top = li.offsetTop, bottom = top + li.offsetHeight;   // .tl is position:relative
+    if (bottom > tl.scrollTop + tl.clientHeight || top < tl.scrollTop) {
+      tl.scrollTo({ top: Math.max(0, bottom - tl.clientHeight + 12), behavior: 'smooth' });
+    }
+  }
+  function tlAdd(html, cls, tip) {
+    const empty = tl.querySelector('.tl-empty');
+    if (empty) empty.remove();
+    const li = document.createElement('li');
+    li.className = cls;
+    li.innerHTML = html;
+    if (tip) { li.setAttribute('data-tip', tip); li.tabIndex = 0; }
+    tl.appendChild(li);
+    while (tl.children.length > 400) tl.removeChild(tl.firstChild);
+    tlScroll(li);
+    return li;
+  }
+  function tlStep(who, title, detail, tip, status) {
+    return tlAdd(`<span class="tl-dot"></span><div><div class="tl-h"><b style="color:${whoColor(who)}">${esc(who)}</b> ${esc(title)}</div>` +
+      `<div class="tl-d">${esc(detail || '')}</div></div>`, 'tl-i ' + (status || ''), tip);
+  }
+  function tlSet(li, status) {
+    li.classList.remove('active', 'ok', 'bad', 'skip');
+    if (status) li.classList.add(status);
+    if (status === 'active') tlScroll(li);
+  }
+  function tlPacket(f) {
+    const to = f.to === 'band' ? 'BAND' : f.to === 'dog' ? 'DOG' : 'DRONE';
+    tlAdd(`<span style="color:${whoColor(f.who)}">${esc(f.who)}</span> &rarr; ${esc(to)} &middot; ${esc(f.label)}`, 'tl-pkt');
+  }
+  function tlMilestone(who, text, tone, tip) {
+    return tlAdd((who ? `<b style="color:${whoColor(who)}">${esc(who)}</b> &middot; ` : '') + esc(text), 'tl-m ' + (tone || ''), tip || text);
+  }
+
+  // ---- map callouts: a bubble next to whoever is acting --------------------------
+  function wrapText(text, n) {
+    const words = text.split(/\s+/), lines = [];
+    let cur = '';
+    for (const w of words) {
+      if ((cur + ' ' + w).trim().length > n) { lines.push(cur.trim()); cur = w; } else cur += ' ' + w;
+    }
+    if (cur.trim()) lines.push(cur.trim());
+    if (lines.length > 3) { lines.length = 3; lines[2] = lines[2].replace(/.{0,2}$/, '') + '...'; }
+    return lines;
+  }
+  function callout(who, text) {
+    const g = $('callouts');
+    g.innerHTML = '';
+    if (!who || !POS[who] || !text) return;
+    if (who === 'DOG' && $('dogG').getAttribute('opacity') !== '1') return;
+    const [x, y] = POS[who], lines = wrapText(text.replace(/\s+→\s+/g, ' → '), 44);
+    const w = 16 + 7.3 * Math.max(...lines.map((l) => l.length)), h = 12 + 16 * lines.length;
+    const bx = Math.max(8, Math.min(1192 - w, x - w / 2));
+    let by = y - 56 - h, below = false;
+    if (by < 6) { by = y + 52; below = true; }
+    const col = whoColor(who);
+    const tri = below ? `${x - 7},${by} ${x + 7},${by} ${x},${by - 9}` : `${x - 7},${by + h} ${x + 7},${by + h} ${x},${by + h + 9}`;
+    g.innerHTML = `<polygon points="${tri}" fill="${col}"/>` +
+      `<rect x="${bx}" y="${by}" width="${w}" height="${h}" rx="6" fill="#0A0E0B" stroke="${col}" stroke-width="1.5" opacity="0.96"/>` +
+      lines.map((l, i) => `<text x="${bx + 8}" y="${by + 19 + i * 16}" font-size="12" fill="#E8F0E4">${esc(l)}</text>`).join('');
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const feedColor = (f) => (f === 'FRIENDLY' ? C.green : f === 'ALIVE' ? C.cyan : C.amber);
+  const whoColor = (w) => (w === 'ATTACKER' ? C.red : w === 'BAND' ? C.green : w === 'DOG' ? C.violet : C.amber);
+  const pktColor = (f) => (f.who === 'ATTACKER' ? C.red : f.who === 'DOG' ? C.violet : f.label === 'CHALLENGE' ? C.amber : f.label === 'ALIVE' ? C.cyan : C.green);
+
+  let S = null, animating = false, runId = 0, pulse = -1, buzzing = false, lastFeed = 'UNKNOWN';
+
+  // ---- pacing: AUTO waits a beat, STEP waits for NEXT ---------------------
+  class Aborted extends Error {}
+  let release = null;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms / SPEED));
+  const check = (id) => { if (id !== runId) throw new Aborted(); };
+  function narrate(who, text) {
+    callout(who, text);
+    $('narr').innerHTML = who ? `<span class="narr-who" style="color:${whoColor(who)}">${esc(who)}</span> &middot; ${esc(text)}` : esc(text);
+  }
+  async function beat(id, who, text, ms) {
+    check(id);
+    narrate(who, text);
+    if (STEP) {
+      $('btnNext').classList.add('waiting');
+      $('btnNext').disabled = false;
+      await new Promise((r) => { release = r; });
+      release = null;
+      $('btnNext').classList.remove('waiting');
+      $('btnNext').disabled = true;
+    } else {
+      await sleep(ms);
+    }
+    check(id);
+  }
+  async function say(id, who, text, ms) {   // a milestone: timeline entry + narration beat
+    check(id);
+    tlMilestone(who, text);
+    await beat(id, who, text, ms);
+  }
+  function next() { if (release) release(); }
+  function tween(ms, fn) {
+    return new Promise((resolve) => {
+      const t0 = performance.now(), dur = ms / SPEED;
+      const tick = (t) => {
+        const p = Math.min(1, (t - t0) / dur);
+        fn(p);
+        if (p < 1) requestAnimationFrame(tick); else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  // ---- server ------------------------------------------------------------
+  async function api(path, method) {
+    try {
+      const res = await fetch('/api/' + path, { method: method || 'POST' });
+      if (!res.ok) throw new Error(res.status);
+      $('err').style.display = 'none';
+      return await res.json();
+    } catch (e) {
+      $('err').style.display = 'block';
+      throw e;
+    }
+  }
+
+  // ---- static render -----------------------------------------------------
+  function render(s) {
+    S = s;
+    const color = feedColor(s.feed);
+    $('feed').textContent = s.feed;
+    $('feed').style.color = color;
+    $('statusBox').style.borderColor = color;
+    $('caption').textContent = s.caption;
+    $('utc').textContent = s.utc;
+    $('slot').textContent = s.slot;
+    $('outNonce').textContent = s.outNonce;
+    $('exchanges').textContent = s.exchanges;
+    $('rejects').textContent = s.rejects;
+    $('bandStatus').textContent = s.bandStatus;
+    $('codeBoxes').innerHTML = s.blink.map((b) => `<span class="box">${b ? 'L' : 'S'}</span>`).join('');
+    renderPulses();
+    renderInsp(s.insp);
+    renderHud(s.feed, s.linkup);
+    renderLinkup(s.linkup);
+    $('log').innerHTML = s.log.map((r) =>
+      `<div><span class="t">${esc(r.t)}</span><span style="color:${TONE[r.tone] || C.soft}"><b>${esc(r.who)}</b> ${esc(r.text)}</span></div>`).join('');
+    const busy = s.busy || animating || !!(s.linkup && s.linkup.running);
+    $('btnChallenge').disabled = busy;
+    $('btnSpoof').disabled = busy;
+    $('btnReplay').disabled = busy || !s.replayReady;
+    $('btnAlive').disabled = busy || !s.canAlive;
+    $('btnLinkup').disabled = animating;
+    $('hwChip').innerHTML = s.hw ? `HARDWARE <span style="color:var(--green)">${esc(s.hw.mode)} · ${esc(s.hw.port)}</span>`
+      : 'BAND <span>simulated</span>';
+    $('hwChip').style.borderColor = s.hw ? 'var(--green)' : '';
+    $('hopChip').style.display = s.hop ? '' : 'none';
+    if (s.hop) $('hopChip').innerHTML = `HOP <span style="color:var(--cyan)">ch ${s.hop.channel + 1}/${s.hop.channels} · ${s.hop.mhz.toFixed(2)} MHz</span>`;
+    $('dogChip').style.display = s.dog ? '' : 'none';
+    if (s.dog) $('dogChip').innerHTML = `MECHDOG <span style="color:var(--violet)">${esc(s.dog.host)}</span> ` + batteryHtml(s.dog.battery) +
+      (s.dog.skipped && s.dog.skipped.length ? ` <span style="color:var(--muted)">skipped: ${esc(s.dog.skipped.join(', '))}</span>` : '');
+    if (s.dog) $('dogChip').setAttribute('data-tip', 'Last reply from the dog: ' + s.dog.last);
+    $('btnDog').textContent = s.dog ? 'DOG…' : 'CONNECT DOG';
+    const bandBle = s.hw && s.hw.mode === 'band over Bluetooth';
+    $('btnBand').textContent = bandBle ? 'BAND…' : 'CONNECT BAND';
+    if (s.bandPicker && s.bandPicker.open && !bandPickerAutoOpened) { bandPickerAutoOpened = true; openBandModal(s.bandPicker.error); }
+    const t = s.tello;
+    $('droneChip').style.display = t ? '' : 'none';
+    $('droneCtl').style.display = t ? 'flex' : 'none';
+    if (t) {
+      const bcol = t.battery == null ? 'var(--muted)' : t.battery < 20 ? C.red : t.battery < 40 ? C.amber : C.green;
+      $('droneChip').innerHTML = `TELLO <span style="color:${t.flying ? C.cyan : 'var(--muted)'}">${t.flying ? 'flying' : 'landed'}</span>` +
+        ` <span style="color:${bcol}">${t.battery == null ? '…' : t.battery + '%'}</span>` + (t.busy ? ` <span style="color:var(--amber)">${esc(t.busy)}</span>` : '');
+      $('droneChip').setAttribute('data-tip', 'Last drone command: ' + t.last);
+    }
+    if (s.dogPicker && s.dogPicker.open && !pickerAutoOpened) { pickerAutoOpened = true; openDogModal(s.dogPicker.error); }
+    renderPbar(s, busy);
+  }
+
+  function renderHud(feed, lu) {
+    const abort = lu && lu.stage === 'abort';
+    const color = abort ? C.red : feedColor(feed);
+    const label = abort ? 'MISMATCH' : feed;
+    $('hudBrackets').setAttribute('stroke', color);
+    $('hudTag').setAttribute('fill', color);
+    $('hudText').textContent = label;
+    $('fov').setAttribute('fill', color);
+    $('fovEdge').setAttribute('stroke', color);
+    if (label !== lastFeed) {
+      const h = $('hud');
+      h.classList.remove('lock');
+      void h.getBoundingClientRect();
+      h.classList.add('lock');
+      lastFeed = label;
+    }
+  }
+
+  // ---- link-up panel -----------------------------------------------------
+  const ICON = { ok: '✓', bad: '✕', active: '', pending: '', skip: '–' };
+  const codeChips = (bits, cls) => bits.map((b) => `<span class="c ${cls || ''}">${b ? 'LONG' : 'SHORT'}</span>`).join('');
+  const emptyChips = (n) => Array.from({ length: n }, () => '<span class="c empty">...</span>').join('');
+
+  function renderLinkup(lu) {
+    if (!lu) {
+      $('luName').textContent = 'no link-up yet';
+      $('luSteps').innerHTML = '<li style="opacity:.6;grid-template-columns:1fr"><span class="dt">Pick a scenario on the left and press START LINK-UP. The drone flies in from about 440 m and must pass far and near recognition before it closes in.</span></li>';
+      $('riskWord').textContent = 'STANDBY'; $('riskWord').style.color = 'var(--muted)';
+      Array.from($('gauge').children).forEach((g) => { g.style.background = '#1A231C'; });
+      $('riskCaption').textContent = 'Pick a scenario and press START LINK-UP.';
+      setCmd('STANDBY', null);
+      renderNear(null);
+      renderSensors(null);
+      setPhase(null);
+      return;
+    }
+    $('luName').textContent = lu.name;
+    $('luSteps').innerHTML = lu.steps.map((st) =>
+      `<li class="${st.status}" tabindex="0" data-tip="${esc(LINKUP_TIP[st.id] || '')}"><span class="ic">${ICON[st.status] || ''}</span>` +
+      `<span><div class="lb">${esc(st.label)}</div><div class="dt">${esc(st.detail)}</div></span>` +
+      `<span class="tm">${esc(st.note)}<br>${esc(st.t)}</span></li>`).join('');
+    const col = RISK_COL[lu.risk];
+    $('riskWord').textContent = lu.risk; $('riskWord').style.color = col;
+    const lit = { HIGH: 1, MEDIUM: 2, LOW: 3 }[lu.risk];
+    Array.from($('gauge').children).forEach((g, i) => {
+      g.style.background = i < lit ? [C.red, C.amber, C.green][i] : '#1A231C';
+      g.style.opacity = i < lit ? (i === lit - 1 ? 1 : 0.35) : 1;
+    });
+    $('riskCaption').textContent = lu.caption;
+    setCmd(lu.command, lu.tone);
+    renderNear(lu.near);
+    renderSensors(lu);
+    setPhase(lu.stage);
+  }
+
+  function renderNear(n) {
+    const chip = (text, ok) => `<span class="c ${ok === undefined ? 'empty' : ok ? 'ok' : 'bad'}">${esc(text)}</span>`;
+    if (!n) {
+      $('nearTag').innerHTML = chip('...'); $('nearRssi').innerHTML = chip('...'); $('nearRtt').innerHTML = chip('...');
+      $('nearResult').textContent = '';
+      return;
+    }
+    const rssiOk = n.rssi >= n.rssiMin, rttOk = n.rtt <= n.rttMax;
+    $('nearTag').innerHTML = chip(n.tag ? 'VALID' : 'INVALID', n.tag);
+    $('nearRssi').innerHTML = chip(`${n.rssi} dBm (min ${n.rssiMin})`, rssiOk);
+    $('nearRtt').innerHTML = chip(`${n.rtt} ms (max ${n.rttMax})`, rttOk);
+    $('nearResult').textContent = n.ok ? 'CLOSE AND DIRECT: near recognition verified'
+      : n.relay ? 'GENUINE BUT TOO SLOW: relay suspected' : 'NO VALID REPLY';
+    $('nearResult').style.color = n.ok ? C.green : C.red;
+  }
+
+  const EYE_COL = { amber: '#FFB020', green: '#5BE37D', red: '#FF6B5E', off: '#1D2A20' };
+  let eyesBusy = false, sonarMm = null;   // last ultrasonic reading: overrides the map range up close
+  function setEyes(name) {
+    const col = EYE_COL[name] || EYE_COL.off;
+    $('dogEyeL').setAttribute('fill', col); $('dogEyeR').setAttribute('fill', col);
+  }
+  function renderSensors(lu) {
+    const eyes = lu ? lu.eyes : 'off';
+    if (!eyesBusy) setEyes(eyes);
+    $('eyesRow').innerHTML = `<span class="c" style="color:${EYE_COL[eyes] || 'var(--muted)'};border-color:${EYE_COL[eyes] || 'var(--line2)'}">${esc((eyes || 'off').toUpperCase())}</span>`;
+    const so = lu && lu.sonar;
+    sonarMm = so && so.mm != null ? so.mm : null;
+    if (sonarMm !== null) setDog(POS.DOG[0], POS.DOG[1], $('dogG').getAttribute('opacity') === '1');
+    if (so && so.mm != null) {
+      const ok = so.done && so.contact;
+      $('sonarRow').innerHTML = `<span class="c ${so.done ? (ok ? 'ok' : 'bad') : ''}">${Math.round(so.mm / 10)} cm${so.done ? (ok ? ' STOP' : '') : ''} · ${esc(so.source)}</span>`;
+      $('dogSonar').textContent = Math.round(so.mm / 10) + ' cm';
+    } else {
+      $('sonarRow').innerHTML = '<span class="c empty">...</span>';
+      $('dogSonar').textContent = '';
+    }
+    $('dogCone').setAttribute('opacity', lu && lu.stage === 'closing' ? 0.18 : 0);
+  }
+
+  function setCmd(text, tone) {
+    const col = tone ? TONE[tone] : 'var(--muted)';
+    $('cmd').textContent = text;
+    $('cmd').style.color = col;
+    $('cmd').style.borderColor = tone ? col : 'var(--line2)';
+  }
+
+  function setPhase(stage) {
+    const far = ['approach_far', 'far', 'alive'].includes(stage), near = ['approach_near', 'near', 'countersign'].includes(stage);
+    const link = ['closing', 'complete'].includes(stage);
+    $('ringFar').setAttribute('stroke', far ? C.amber : '#3A3018');
+    $('lblFar').setAttribute('fill', far ? C.amber : '#6E5A2C');
+    $('ringNear').setAttribute('stroke', near ? C.cyan : '#1C3440');
+    $('lblNear').setAttribute('fill', near ? C.cyan : '#3C6474');
+    $('ringLink').setAttribute('stroke', link ? C.green : '#1F3A28');
+  }
+
+  // ---- drone position ----------------------------------------------------
+  function setDrone(x, y, showRange) {
+    POS.DRONE = [x, y];
+    $('droneG').setAttribute('transform', `translate(${x} ${y})`);
+    $('fov').setAttribute('points', `${x + 14},${y} 1070,82 1070,222`);
+    $('fovEdge').setAttribute('points', `1070,82 ${x + 14},${y} 1070,222`);
+    const px = Math.hypot(POS.BAND[0] - x, POS.BAND[1] - y), m = Math.round(px * 0.5);
+    $('droneLbl').setAttribute('opacity', px < 250 ? 0 : 1);   // keep labels apart up close
+    $('droneRange').textContent = showRange ? m + ' m' : '';
+    ranges.drone = showRange ? m : null;
+    showRanges();
+  }
+  const ranges = { drone: null, dog: null };
+  function showRanges() {
+    const parts = [];
+    if (ranges.drone !== null) parts.push('DRONE ' + ranges.drone + ' m');
+    if (ranges.dog !== null) parts.push('DOG ' + ranges.dog + ' m');
+    $('luRange').textContent = parts.length ? parts.join(' · ') : '-';
+  }
+  function setDog(x, y, visible) {
+    POS.DOG = [x, y];
+    $('dogG').setAttribute('transform', `translate(${x} ${y})`);
+    $('dogG').setAttribute('opacity', visible ? 1 : 0);
+    const m = sonarMm !== null ? (sonarMm / 1000).toFixed(1) : Math.round(Math.hypot(POS.BAND[0] - x, POS.BAND[1] - y) * 0.5);
+    $('dogRange').textContent = visible ? m + ' m' : '';
+    $('dogLbl').setAttribute('opacity', m < 45 ? 0 : 1);   // a string (sensor metres) compares as a number
+    ranges.dog = visible ? m : null;
+    showRanges();
+  }
+  // Dog walks along the ground toward the person until it is d px away.
+  function approachDog(d, ms) {
+    const [x0, y0] = POS.DOG, [bx, by] = POS.BAND;
+    const [ux, uy] = [x0 - bx, y0 - by], len = Math.hypot(ux, uy);
+    const [tx, ty] = [bx + ux / len * d, by + uy / len * d];
+    return tween(ms, (p) => setDog(x0 + (tx - x0) * p, y0 + (ty - y0) * p + Math.sin(p * 40) * 1.2, true));
+  }
+  function approach(d, ms) {
+    const [x0, y0] = POS.DRONE, [bx, by] = POS.BAND;
+    const [ux, uy] = [START[0] - bx, START[1] - by], len = Math.hypot(ux, uy);
+    const [tx, ty] = [bx + ux / len * d, by + uy / len * d];
+    return tween(ms, (p) => {
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;   // ease in-out
+      setDrone(x0 + (tx - x0) * e, y0 + (ty - y0) * e, true);
+    });
+  }
+
+  function renderInsp(insp) {
+    $('inspTitle').textContent = insp.title;
+    $('inspRoute').textContent = insp.route;
+    $('inspFields').innerHTML = insp.fields.map((f) => {
+      const col = (FIELDS.find((x) => x[0] === f.name) || [0, 0, 0, C.soft])[3];
+      return `<div class="field" style="border-top-color:${col}"><span>${esc(f.name)}</span><span>${esc(f.hex)}</span></div>`;
+    }).join('');
+    $('inspChecks').innerHTML = insp.checks.map((k) =>
+      `<div class="kv"><span>${esc(k.label)}</span><span style="color:${TONE[k.tone] || C.plain};overflow-wrap:anywhere;text-align:right">${esc(k.value)}</span></div>`).join('');
+  }
+
+  function renderPulses() {
+    if (!S) return;
+    $('pulseBoxes').innerHTML = S.blink.map((b, i) =>
+      `<span class="pulse${pulse === i ? ' on' : ''}">${b ? 'LONG' : 'SHORT'}</span>`).join('');
+    const on = pulse >= 0;
+    $('led').setAttribute('fill', on ? C.green : '#1D2A20');
+    $('ledGlow').setAttribute('opacity', on ? 0.9 : 0);
+    $('mapLed').setAttribute('fill', on ? C.green : '#1D2A20');
+    $('mapLedGlow').setAttribute('opacity', on ? 0.9 : 0);
+    $('buzzWaves').setAttribute('opacity', buzzing ? 1 : 0.12);
+    $('bandBody').classList.toggle('shake', buzzing);
+    $('buzzText').textContent = buzzing ? 'BUZZING' : 'quiet';
+    $('buzzText').style.color = buzzing ? C.amber : '#8FA392';
+  }
+
+  // ---- byte strip --------------------------------------------------------
+  const cells = [];
+  (function buildStrip() {
+    for (let i = 0; i < 32; i++) {
+      const d = document.createElement('div');
+      d.className = 'byte';
+      d.textContent = '..';
+      $('bytes').appendChild(d);
+      cells.push(d);
+    }
+    $('legend').innerHTML = FIELDS.map((f) => `<span><i style="background:${f[3]}"></i>${f[0]} ${f[2] - f[1]}B</span>`).join('');
+  })();
+  let rawBytes = [];
+  function clearStrip() { cells.forEach((c) => { c.className = 'byte'; c.textContent = '..'; c.style.cssText = ''; }); }
+  function fieldOf(i) { return FIELDS.find((f) => i >= f[1] && i < f[2]); }
+  function fill(start, end) {
+    for (let i = start; i < end; i++) {
+      const c = cells[i], col = fieldOf(i)[3];
+      c.className = 'byte on';
+      c.textContent = rawBytes[i] || '00';
+      c.style.borderColor = col;
+      c.style.background = col + '22';
+      c.style.animationDelay = ((i - start) * 18 / SPEED) + 'ms';
+    }
+  }
+  async function shimmer(start, end, ms) {
+    const until = performance.now() + ms / SPEED;
+    while (performance.now() < until) {
+      for (let i = start; i < end; i++) {
+        cells[i].className = 'byte calc';
+        cells[i].textContent = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+      }
+      await new Promise((r) => setTimeout(r, 60));
+    }
+  }
+  function showWhole(raw) { rawBytes = (raw.match(/../g) || []); fill(0, 32); }
+
+  // ---- flow panel --------------------------------------------------------
+  function stepHtml(s, i) {
+    const slots = s.slots ? `<div class="slots">${s.slots.map((c) => `<span data-off="${c.off}">${c.off > 0 ? '+' : ''}${c.off}</span>`).join('')}</div>` : '';
+    return `<div class="step" data-i="${i}" tabindex="0" data-tip="${esc(tipFor(s.label))}"><div class="n">STEP ${i + 1}</div><div class="l">${esc(s.label)}</div>` +
+      `<div class="d">${esc(s.detail)}</div><div class="v${s.tone ? ' tone-' + s.tone : ''}">${esc(s.status === 'skip' ? 'not reached' : s.value)}</div>${slots}</div>`;
+  }
+  function showCard(el) {                       // keep the active card in view (presentation view)
+    if (!document.body.classList.contains('present')) return;
+    const box = $('flowPanel'), r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+    if (r.bottom > b.bottom - 6 || r.top < b.top + 6) box.scrollBy({ top: r.top - b.top - 40, behavior: 'smooth' });
+  }
+  function lane(boxId, titleId, who, title, steps) {
+    $(titleId).innerHTML = `<span style="color:${whoColor(who)}">${esc(who)}</span> ${esc(title)}`;
+    $(boxId).innerHTML = steps.map(stepHtml).join('');
+    return Array.from($(boxId).querySelectorAll('.step'));
+  }
+
+  // Sender: build the packet field by field, then put it on the air.
+  async function playBuild(id, f, raw) {
+    rawBytes = (raw.match(/../g) || []);
+    clearStrip();
+    $('rxTitle').textContent = '-';
+    $('rxSteps').innerHTML = '<span class="ph">Waiting for the packet to land.</span>';
+    const els = lane('txSteps', 'txTitle', f.who, 'builds ' + f.label, f.build);
+    tlPacket(f);
+    for (let i = 0; i < f.build.length; i++) {
+      const st = f.build[i], el = els[i];
+      el.classList.add('active');
+      showCard(el);
+      const li = tlStep(f.who, st.label, st.value || st.detail, tipFor(st.label), 'active');
+      if (st.label === 'HMAC-SHA256') shimmer(8, 16, 500);
+      const map = { Nonce: [2, 6], Slot: [6, 8], Truncate: [8, 16], Sniff: [0, 32] }[st.label];
+      if (map) fill(map[0], map[1]);
+      if (st.label === 'Frame') { fill(0, 2); fill(16, 32); }
+      await beat(id, f.who, `${st.label}: ${st.detail}${st.value ? '  →  ' + st.value : ''}`, 420);
+      if (st.label === 'HMAC-SHA256') await sleep(80);
+      el.classList.remove('active');
+      el.classList.add('ok');
+      tlSet(li, 'ok');
+    }
+  }
+
+  // Receiver: run each check in the code's order; a failure stops the rest.
+  async function playTrace(id, t) {
+    const els = lane('rxSteps', 'rxTitle', t.who, t.label, t.steps);
+    for (let i = 0; i < t.steps.length; i++) {
+      const st = t.steps[i], el = els[i];
+      if (st.status === 'skip') { el.classList.add('skip'); tlStep(t.who, st.label, 'not reached', tipFor(st.label), 'skip'); continue; }
+      el.classList.add('active');
+      showCard(el);
+      const li = tlStep(t.who, st.label, st.value, tipFor(st.label), 'active');
+      if (st.slots) {
+        for (const off of [0, -1, 1]) {        // P.DRIFT_SLOTS order
+          const chip = el.querySelector(`[data-off="${off}"]`), state = st.slots.find((c) => c.off === off).state;
+          if (state === 'untried') continue;
+          chip.className = 'try';
+          await sleep(160);
+          chip.className = state;
+        }
+      }
+      await beat(id, t.who, `${st.label}: ${st.detail}  →  ${st.value}`, 480);
+      el.classList.remove('active');
+      el.classList.add(st.status);
+      tlSet(li, st.status);
+    }
+    const col = t.ok ? C.green : C.red;
+    $('rxSteps').insertAdjacentHTML('beforeend', `<span class="verdict" style="color:${col};border-color:${col}">${esc(t.verdict)}</span>`);
+    tlMilestone(t.who, t.verdict, t.ok ? 'ok' : 'bad', VERDICT_TIP[t.who + (t.ok ? ' ok' : ' bad')]);
+    await beat(id, t.who, t.verdict, 700);
+  }
+
+  // ---- map animation -----------------------------------------------------
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || $('waves')).appendChild(e);
+    return e;
+  }
+  async function flyMap(f) {
+    const [sx, sy] = POS[f.who], [dx, dy] = POS[f.to === 'band' ? 'BAND' : f.to === 'dog' ? 'DOG' : 'DRONE'];
+    const color = pktColor(f), dist = Math.hypot(dx - sx, dy - sy), dur = 1300;
+    if (f.who === 'ATTACKER') $('attacker').setAttribute('opacity', 1);
+    const rings = [0, 1, 2].map(() => el('circle', { cx: sx, cy: sy, r: 0, fill: 'none', stroke: color, 'stroke-width': 2 }));
+    const g = el('g', {}, $('pktLayer'));
+    el('rect', { x: -52, y: -12, width: 104, height: 24, rx: 4, fill: color }, g);
+    const tx = el('text', { x: 0, y: 4, 'font-size': 11, 'font-weight': 700, fill: '#0A0E0B', 'text-anchor': 'middle' }, g);
+    tx.textContent = f.label;
+    const [ax, ay] = POS.ATTACKER, sniffAt = Math.hypot(ax - sx, ay - sy) / dist;
+    let sniffed = false;
+    await tween(dur * 1.35, (p) => {
+      const q = p * 1.35;                       // wave front reaches the target when q = 1
+      rings.forEach((r, i) => {
+        const qi = Math.max(0, q - i * 0.12);
+        r.setAttribute('r', qi * dist);
+        r.setAttribute('opacity', Math.max(0, 0.75 * (1 - qi / 1.5)));
+      });
+      const k = Math.min(1, q);
+      g.setAttribute('transform', `translate(${sx + (dx - sx) * k} ${sy + (dy - sy) * k})`);
+      g.setAttribute('opacity', q > 1 ? Math.max(0, 1 - (q - 1) * 3) : 1);
+      if (f.sniffed && !sniffed && q >= sniffAt) { sniffed = true; flashCaptured(); }
+    });
+    rings.forEach((r) => r.remove());
+    g.remove();
+    const hit = el('circle', { cx: dx, cy: dy, r: 6, fill: 'none', stroke: color, 'stroke-width': 3 });
+    tween(400, (p) => { hit.setAttribute('r', 6 + p * 30); hit.setAttribute('opacity', 1 - p); }).then(() => hit.remove());
+    if (f.who === 'ATTACKER') $('attacker').setAttribute('opacity', 0.5);
+  }
+  function flashCaptured() {
+    const a = $('attacker'), t = $('captured');
+    a.setAttribute('opacity', 1);
+    t.setAttribute('opacity', 1);
+    setTimeout(() => { t.setAttribute('opacity', 0); a.setAttribute('opacity', 0.5); }, 1600 / SPEED);
+  }
+
+  // ---- band close-up -----------------------------------------------------
+  async function buzz(bits) {
+    buzzing = true; renderPulses();
+    for (let i = 0; i < bits.length; i++) {
+      pulse = i; renderPulses();
+      await sleep(bits[i] ? 450 : 150);         // SHORT 150 ms, LONG 450 ms, as in the firmware plan
+      pulse = -1; renderPulses();
+      await sleep(250);
+    }
+    buzzing = false; renderPulses();
+  }
+  function pressButton() {
+    $('bandBtn').classList.add('pressed');
+    const r = $('btnRipple');
+    tween(500, (p) => { r.setAttribute('r', 9 + p * 26); r.setAttribute('opacity', 1 - p); });
+    setTimeout(() => $('bandBtn').classList.remove('pressed'), 220 / SPEED);
+  }
+
+  // ---- orchestration -----------------------------------------------------
+  const INTRO = {
+    challenge: ['DRONE', 'Operator presses CHALLENGE: the drone asks the contact to prove it is friendly'],
+    spoof: ['ATTACKER', 'An attacker without the key forges a challenge, hoping the band will reveal itself'],
+    replay: ['ATTACKER', 'The attacker re-sends the genuine reply it recorded earlier'],
+    press: ['BAND', "The wearer presses I'M ALIVE on the band"],
+    incoming: ['BAND', 'The BOOT button was pressed on the real band'],
+  };
+
+  async function run(action) {
+    if (animating) return;
+    animating = true;
+    const id = ++runId;
+    try {
+      let s = action ? await api(action) : await api('state', 'GET');
+      check(id);
+      render(s);
+      if (action === 'press') pressButton();
+      if (action && INTRO[action] && s.flight) await say(id, INTRO[action][0], INTRO[action][1], 600);
+      s = await playFlights(id, s);
+      if (action) narrate(null, idleText(s));
+    } catch (e) {
+      if (!(e instanceof Aborted)) { /* network error banner already shown */ }
+    } finally {
+      done(id);
+    }
+  }
+
+  function done(id) {
+    if (id !== runId) return;
+    animating = false;
+    $('btnNext').disabled = true;
+    $('btnNext').classList.remove('waiting');
+    if (S) render(S);
+  }
+
+  // Animate every packet in the air until the channel is quiet. Returns the last state.
+  async function playFlights(id, s) {
+    let raw = s.insp.raw;
+    while (s.flight) {
+      const f = s.flight;
+      await playBuild(id, f, raw);
+      await beat(id, f.who, `On air: ${f.label} goes out as a broadcast. Every radio in range hears it` +
+        (f.sniffed ? ', including the attacker, who records it' : ''), 250);
+      await flyMap(f);
+      check(id);
+      const r = await api('deliver');
+      check(id);
+      if (r.trace) await playTrace(id, r.trace);
+      render(r);
+      if (r.buzz) {
+        buzz(r.buzz);
+        await sleep(500);
+      }
+      if (r.inspNext) { renderInsp(r.inspNext); raw = r.inspNext.raw; }
+      s = r;
+    }
+    return s;
+  }
+
+  // Link-up: the drone recognizes at range and holds and keeps watch; the dog does the near check.
+  async function runLinkup(scn) {
+    if (animating) return;
+    animating = true;
+    const id = ++runId;
+    try {
+      let s = await api('linkup_start/' + scn);
+      check(id);
+      clearVisuals();
+      setDrone(START[0], START[1], true);
+      setDog(START[0], START[1] + 40, false);
+      render(s);
+      await say(id, 'DRONE', `Link-up, ${s.linkup.name.toLowerCase()}: the drone heads for an unidentified contact. Risk stays HIGH until it is recognized.`, 900);
+      await approach(FAR_D, 1800);
+      await say(id, 'DRONE', 'At the far line, about 210 m out. Too far to see the band, so it recognizes by radio first.', 800);
+      s = await api('linkup_far'); check(id); render(s);
+      s = await playFlights(id, s);
+      if (s.linkup.stage === 'alive') {
+        await say(id, 'BAND', 'Verified: the band buzzes and blinks on the person\'s wrist. They press I\'M ALIVE to say they are OK.', 900);
+        s = await api('linkup_alive'); check(id); render(s);
+        s = await playFlights(id, s);
+        if (s.feed === 'ALIVE') await say(id, 'DRONE', 'ALIVE received: signed with the drone\'s own nonce, accepted once. The feed shows ALIVE.', 900);
+      }
+      if (s.linkup.stage !== 'approach_near') return finishLinkup(s);
+      await say(id, 'DRONE', 'Far recognition verified. The drone holds here and keeps watch and sends the dog in for the near check.', 1000);
+      setDog(POS.DRONE[0], POS.DRONE[1] + 46, true);
+      await say(id, 'DOG', 'The dog walks the last stretch. It carries its own @@SHORT@@ radio for a close-range challenge.', 600);
+      const walk1 = 2600;
+      api('dog_walk/' + Math.round(walk1 / SPEED)).catch(() => {});   // real MechDog walks too, if attached
+      await approachDog(NEAR_D, walk1);
+      await say(id, 'DOG', 'At the near line, about 55 m. It challenges the band itself and times the reply: a relay cannot hide the extra airtime.', 800);
+      s = await api('linkup_near'); check(id); render(s);
+      s = await playFlights(id, s);
+      if (s.linkup.stage !== 'countersign') return finishLinkup(s);
+      await say(id, 'DOG', `Close and direct: ${s.linkup.near.rssi} dBm, ${s.linkup.near.rtt} ms round trip. Risk drops to LOW.`, 900);
+      const walk2 = 1200;
+      api('dog_walk/' + Math.round(walk2 / SPEED)).catch(() => {});
+      await approachDog(46, walk2);
+      s = await api('linkup_countersign'); check(id);
+      await countersign(id, s.linkup.countersign);
+      render(s);
+      await say(id, 'DOG', 'Final approach on the ultrasonic sensor: walk in slowly, stop at arm\'s length.', 400);
+      const [d0x, d0y] = POS.DOG, [bx, by] = POS.BAND;
+      for (let i = 0; i < 300; i++) {             // poll the sensor until the dog stops (or gives up)
+        s = await api('linkup_complete'); check(id); render(s);
+        const so = s.linkup.sonar;
+        if (so && so.mm != null) {                 // map the reading onto the last few pixels
+          const f = Math.max(0, Math.min(1, (so.startMm - so.mm) / (so.startMm - so.stopMm)));
+          setDog(d0x + (bx - d0x) * f * 0.45, d0y + (by - d0y) * f * 0.45, true);
+        }
+        if (s.linkup.stage !== 'closing') break;
+        await sleep(200);
+      }
+      finishLinkup(s);
+    } catch (e) {
+      if (!(e instanceof Aborted)) { /* network error banner already shown */ }
+    } finally {
+      done(id);
+    }
+  }
+
+  // Robot-to-human recognition: the dog's eyes flash this hour's code, same timing as the band's LED.
+  async function countersign(id, bits) {
+    eyesBusy = true;
+    try {
+      await say(id, 'DOG', 'Countersign: the dog flashes this hour\'s code on its eyes, ' +
+        bits.map((b) => (b ? 'LONG' : 'SHORT')).join(' ') + '. The person checks it against their band.', 500);
+      for (const b of bits) {
+        setEyes('green');
+        await sleep(b ? 450 : 150);
+        setEyes('off');
+        await sleep(250);
+      }
+    } finally {
+      eyesBusy = false;
+    }
+  }
+
+  function finishLinkup(s) {
+    const lu = s.linkup;
+    tlMilestone('DOG', `${lu.command}. ${lu.caption}`, lu.stage === 'complete' ? 'ok' : 'bad');
+    narrate(['abort', 'complete', 'countersign', 'closing'].includes(lu.stage) || lu.steps[3].status !== 'pending' ? 'DOG' : 'DRONE',
+      `${lu.command}. ${lu.caption}`);
+    if (lu.stage === 'abort') {                   // dog backs away from the impostor
+      const [bx, by] = POS.BAND, [x0, y0] = POS.DOG, len = Math.hypot(x0 - bx, y0 - by);
+      const [tx, ty] = [bx + (x0 - bx) / len * (len + 90), by + (y0 - by) / len * (len + 90)];
+      const rid = runId;                          // stop if a new run or a reset starts
+      tween(1200, (p) => { if (rid === runId) setDog(x0 + (tx - x0) * p, y0 + (ty - y0) * p, true); });
+    }
+  }
+
+  function clearVisuals() {
+    pulse = -1; buzzing = false;
+    $('waves').innerHTML = ''; $('pktLayer').innerHTML = '';
+    $('attacker').setAttribute('opacity', 0.5);
+    clearStrip();
+    $('txTitle').textContent = '-'; $('rxTitle').textContent = '-';
+    $('txSteps').innerHTML = '<span class="ph">Waiting for a packet.</span>';
+    $('rxSteps').innerHTML = '<span class="ph">Waiting for the packet to land.</span>';
+  }
+
+  function idleText(s) {
+    if (s.feed === 'FRIENDLY') return 'Done. The feed shows FRIENDLY because a reply was verified. Try a replay attack next.';
+    if (s.feed === 'ALIVE') return 'Done. The person is verified as one of ours and pressed I\'m alive.';
+    return 'Done. The feed stays UNKNOWN: nothing was verified. ' + (s.caption || '');
+  }
+
+  // ---- controls ----------------------------------------------------------
+  function seg(id, onPick) {
+    const btns = Array.from($(id).querySelectorAll('button'));
+    btns.forEach((b) => b.addEventListener('click', () => {
+      btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      onPick(b.dataset.v);
+    }));
+    return btns;
+  }
+  const modeBtns = seg('segMode', (v) => {
+    STEP = v === 'step';
+    $('btnNext').style.display = STEP ? 'inline-block' : 'none';
+    if (!STEP) next();                          // switching to AUTO releases a waiting step
+  });
+  const speedBtns = seg('segSpeed', (v) => { SPEED = parseFloat(v); });
+  modeBtns.forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.v === 'step') === STEP)));
+  speedBtns.forEach((b) => b.setAttribute('aria-pressed', String(parseFloat(b.dataset.v) === SPEED)));
+  $('btnNext').style.display = STEP ? 'inline-block' : 'none';
+  $('btnNext').disabled = true;
+  $('btnNext').onclick = next;
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input,textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') { if (release) { e.preventDefault(); next(); } }
+    if ((e.key === 'x' || e.key === 'X') && $('droneCtl').style.display !== 'none') { e.preventDefault(); api('drone/emergency'); }
+  });
+
+  $('btnChallenge').onclick = () => run('challenge');
+  $('btnSpoof').onclick = () => run('spoof');
+  $('btnReplay').onclick = () => run('replay');
+  $('btnAlive').onclick = () => run('press');
+  const scnBtns = Array.from(document.querySelectorAll('#scnList .scn'));
+  scnBtns.forEach((b) => b.addEventListener('click', () => {
+    scnBtns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    scenario = b.dataset.v;
+  }));
+  $('btnLinkup').onclick = () => runLinkup(scenario);
+
+  $('btnReset').onclick = async () => {
+    runId++;                                     // abort any running animation
+    if (release) release();
+    animating = false;
+    clearVisuals();
+    $('callouts').innerHTML = '';
+    tlMilestone(null, 'Reset: fresh drone, band and attacker.');
+    setDrone(HOME[0], HOME[1], false);
+    setDog(HOME[0], HOME[1] + 46, false);
+    try { render(await api('reset')); } catch (e) { /* banner */ }
+    narrate(null, 'Reset. Fresh drone, band and attacker. Press CHALLENGE to start.');
+  };
+
+
+  // ---- battery, presentation bar, view switch ------------------------------------
+  let pickerAutoOpened = false;
+  function batteryHtml(b) {
+    if (!b) return '<span style="color:var(--muted)">battery …</span>';
+    const col = b.low ? C.red : b.pct < 35 ? C.amber : C.green, w = Math.max(1, Math.round(b.pct / 100 * 14));
+    return `<svg width="24" height="12" viewBox="0 0 24 12" aria-hidden="true" style="vertical-align:-1px">` +
+      `<rect x="1" y="1" width="19" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1.5"/>` +
+      `<rect x="21" y="4" width="2" height="4" fill="${col}"/><rect x="3" y="3" width="${w}" height="6" fill="${col}"/></svg>` +
+      ` <span style="color:${col}">${(b.mv / 1000).toFixed(2)} V · ${b.pct}%${b.low ? ' LOW' : ''}</span>`;
+  }
+  function renderPbar(s, busy) {
+    const lu = s.linkup;
+    const tile = (id, text, sub, color) => {
+      const t = $('t' + id);
+      $('p' + id).textContent = text;
+      $('p' + id).style.color = color;
+      $('p' + id + 'Sub').textContent = sub;
+      t.style.borderColor = color === 'var(--muted)' ? 'var(--line2)' : color;
+      t.style.backgroundColor = color === 'var(--muted)' ? 'var(--panel)' : `color-mix(in srgb, ${color} 12%, var(--panel))`;
+    };
+    tile('Feed', s.feed, FEED_SUB[s.feed] || '', feedColor(s.feed));
+    tile('Risk', lu ? lu.risk : '-', lu ? RISK_SUB[lu.risk] || '' : 'start a link-up to rate it',
+         lu ? RISK_COL[lu.risk] : 'var(--muted)');
+    tile('Cmd', lu ? lu.command : 'STANDBY', lu ? lu.caption || '' : 'waiting for a challenge or link-up',
+         lu ? TONE[lu.tone] : 'var(--muted)');
+    $('pLinkup').disabled = animating;
+    $('pChallenge').disabled = busy;
+    $('pSpoof').disabled = busy;
+    $('pReplay').disabled = busy || !s.replayReady;
+    $('pAlive').disabled = busy || !s.canAlive;
+  }
+  const flowPanel = $('flowPanel'), flowHome = document.createComment('flow panel home');
+  flowPanel.parentNode.insertBefore(flowHome, flowPanel);
+  function setView(v) {
+    document.body.classList.toggle('present', v === 'present');
+    if (v === 'present') $('stageMain').insertBefore(flowPanel, document.querySelector('.pbar'));
+    else flowHome.parentNode.insertBefore(flowPanel, flowHome);
+    Array.from($('segView').querySelectorAll('button')).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    try { localStorage.setItem('iffView', v); } catch (e) { /* private window: fine */ }
+    hideTip();
+  }
+  let startView = qs.get('view');
+  if (!startView) { try { startView = localStorage.getItem('iffView'); } catch (e) { startView = null; } }
+  setView(startView === 'detail' ? 'detail' : 'present');
+  $('segView').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
+  $('pLinkup').onclick = () => { scenario = $('pScn').value; runLinkup(scenario); };
+  $('pScn').onchange = () => {
+    scenario = $('pScn').value;
+    document.querySelectorAll('#scnList .scn').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === scenario)));
+  };
+  $('pChallenge').onclick = () => run('challenge');
+  $('pSpoof').onclick = () => run('spoof');
+  $('pReplay').onclick = () => run('replay');
+  $('pAlive').onclick = () => run('press');
+  $('pReset').onclick = () => $('btnReset').click();
+  $('pLand').onclick = () => api('drone/land');
+  $('pEstop').onclick = () => api('drone/emergency');
+  $('tlClear').onclick = () => { tl.innerHTML = '<li class="tl-empty">Cleared.</li>'; };
+
+  // ---- dog picker -------------------------------------------------------------------
+  const dlg = $('dogModal');
+  let devices = [], showAll = false;
+  function modalErr(msg) { $('dogModalErr').hidden = !msg; $('dogModalErr').textContent = msg || ''; }
+  function renderDevices() {
+    const list = devices.filter((d) => showAll || d.likely || d.name);
+    $('dogAll').textContent = showAll ? 'NAMED ONLY' : `SHOW ALL (${devices.length})`;
+    if (!list.length) { $('dogList').innerHTML = '<li class="sub">No named devices found. Is the dog on and the Hiwonder app closed? Try RESCAN or SHOW ALL.</li>'; return; }
+    $('dogList').innerHTML = list.map((d, i) => {
+      const bars = d.rssi > -60 ? '▮▮▮▮' : d.rssi > -70 ? '▮▮▮' : d.rssi > -80 ? '▮▮' : '▮';
+      return `<li><label><input type="radio" name="dev" value="${esc(d.address)}"${i === 0 && d.likely ? ' checked' : ''}>` +
+        `<span><b>${esc(d.name || 'unnamed')}</b>${d.likely ? '<span class="badge">MECHDOG</span>' : ''}<div class="addr">${esc(d.address)}</div></span>` +
+        `<span class="sub" title="signal ${d.rssi} dBm">${bars} ${d.rssi}</span></label></li>`;
+    }).join('');
+  }
+  async function scanDogs() {
+    $('dogModalStatus').textContent = 'Scanning Bluetooth for about 5 seconds…';
+    $('dogRescan').disabled = true;
+    try {
+      const r = await (await fetch('/api/dog/scan')).json();
+      devices = r.devices || [];
+      if (r.error) modalErr(r.error);           // keep an earlier message (e.g. --dog not found) otherwise
+      renderDevices();
+      $('dogModalStatus').textContent = devices.length ? `${devices.filter((d) => d.likely).length} MechDog(s) among ${devices.length} devices.` : '';
+    } catch (e) {
+      modalErr('Scan failed: is the console server still running?');
+    } finally {
+      $('dogRescan').disabled = false;
+    }
+  }
+  function openDogModal(err) {
+    modalErr(err);
+    if (!dlg.open) dlg.showModal();
+    if (!devices.length) scanDogs();
+    fetch('/api/dog/picker', { method: 'POST' }).catch(() => {});
+  }
+  $('btnDog').onclick = () => openDogModal(null);
+  $('dogRescan').onclick = scanDogs;
+  $('dogAll').onclick = () => { showAll = !showAll; renderDevices(); };
+  $('dogConnect').onclick = async () => {
+    const ip = $('dogIp').value.trim(), picked = dlg.querySelector('input[name="dev"]:checked');
+    const target = ip || (picked && picked.value);
+    if (!target) { modalErr('Pick a device or type a Wi-Fi IP.'); return; }
+    $('dogModalStatus').textContent = 'Connecting to ' + target + '…';
+    $('dogConnect').disabled = true;
+    try {
+      const s = await (await fetch('/api/dog/connect/' + encodeURIComponent(target), { method: 'POST' })).json();
+      render(s);
+      if (s.dog) { dlg.close(); tlMilestone('DOG', 'Connected to ' + s.dog.host, 'ok'); }
+      else { modalErr((s.dogPicker && s.dogPicker.error) || 'Could not connect.'); $('dogModalStatus').textContent = ''; }
+    } catch (e) {
+      modalErr('Connect failed: is the console server still running?');
+    } finally {
+      $('dogConnect').disabled = false;
+    }
+  };
+  $('dogDisconnect').onclick = async () => {
+    try { render(await (await fetch('/api/dog/disconnect', { method: 'POST' })).json()); } catch (e) { /* banner */ }
+    $('dogModalStatus').textContent = 'Disconnected.';
+  };
+
+  // ---- wristband over Bluetooth: same picker pattern as the dog's ------------------
+  const bdlg = $('bandModal');
+  let bands = [], bandsAll = false, bandPickerAutoOpened = false;
+  function bandErr(msg) { $('bandModalErr').hidden = !msg; $('bandModalErr').textContent = msg || ''; }
+  function renderBands() {
+    const list = bands.filter((d) => bandsAll || d.likely);
+    $('bandAll').textContent = bandsAll ? 'BANDS ONLY' : `SHOW ALL (${bands.length})`;
+    if (!list.length) { $('bandList').innerHTML = '<li class="sub">No Rescue-Band found. Is the wristband powered, with the Bluetooth firmware flashed? Try RESCAN.</li>'; return; }
+    $('bandList').innerHTML = list.map((d, i) => {
+      const bars = d.rssi > -60 ? '▮▮▮▮' : d.rssi > -70 ? '▮▮▮' : d.rssi > -80 ? '▮▮' : '▮';
+      return `<li><label><input type="radio" name="band" value="${esc(d.address)}"${i === 0 && d.likely ? ' checked' : ''}>` +
+        `<span><b>${esc(d.name || 'unnamed')}</b>${d.likely ? '<span class="badge">WRISTBAND</span>' : ''}<div class="addr">${esc(d.address)}</div></span>` +
+        `<span class="sub" title="signal ${d.rssi} dBm">${bars} ${d.rssi}</span></label></li>`;
+    }).join('');
+  }
+  async function scanBands() {
+    $('bandModalStatus').textContent = 'Scanning Bluetooth for about 5 seconds…';
+    $('bandRescan').disabled = true;
+    try {
+      const r = await (await fetch('/api/band/scan')).json();
+      bands = r.devices || [];
+      if (r.error) bandErr(r.error);
+      renderBands();
+      $('bandModalStatus').textContent = bands.length ? `${bands.filter((d) => d.likely).length} wristband(s) among ${bands.length} devices.` : '';
+    } catch (e) {
+      bandErr('Scan failed: is the console server still running?');
+    } finally {
+      $('bandRescan').disabled = false;
+    }
+  }
+  function openBandModal(err) {
+    bandErr(err);
+    if (!bdlg.open) bdlg.showModal();
+    if (!bands.length) scanBands();
+    fetch('/api/band/picker', { method: 'POST' }).catch(() => {});
+  }
+  $('btnBand').onclick = () => openBandModal(null);
+  $('bandRescan').onclick = scanBands;
+  $('bandAll').onclick = () => { bandsAll = !bandsAll; renderBands(); };
+  $('bandConnect').onclick = async () => {
+    const picked = bdlg.querySelector('input[name="band"]:checked');
+    if (!picked) { bandErr('Pick a wristband first.'); return; }
+    $('bandModalStatus').textContent = 'Connecting over Bluetooth…';
+    $('bandConnect').disabled = true;
+    try {
+      const s = await (await fetch('/api/band/connect/' + encodeURIComponent(picked.value), { method: 'POST' })).json();
+      render(s);
+      if (s.hw && s.hw.mode === 'band over Bluetooth') { bdlg.close(); tlMilestone('BAND', 'Connected over Bluetooth: ' + s.hw.port, 'ok'); }
+      else { bandErr((s.bandPicker && s.bandPicker.error) || 'Could not connect.'); $('bandModalStatus').textContent = ''; }
+    } catch (e) {
+      bandErr('Connect failed: is the console server still running?');
+    } finally {
+      $('bandConnect').disabled = false;
+    }
+  };
+  $('bandDisconnect').onclick = async () => {
+    try { render(await (await fetch('/api/band/disconnect', { method: 'POST' })).json()); } catch (e) { /* banner */ }
+    $('bandModalStatus').textContent = 'Disconnected.';
+  };
+
+  run(null);  // first paint; also finishes any packet left in flight by a page reload
+  // Poll: every second with real hardware (so a BOOT button press on the board shows up), else every 15 s.
+  let tick = 0;
+  setInterval(async () => {
+    tick++;
+    if (animating || !(S && S.hw) && tick % 15) return;
+    try {
+      const s = await api('state', 'GET');
+      if (animating) return;
+      render(s);
+      if (s.hwPending > 0) run('incoming');
+    } catch (e) { /* banner */ }
+  }, 1000);
+})();
+</script>
+</body>
+</html>

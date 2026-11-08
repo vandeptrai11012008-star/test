@@ -1,0 +1,395 @@
+<!-- ============================================================================
+     IFF Operator Console  --  "Next Steps" add-on  (the guide deck)
+     Build:   nextsteps-v3   (slide deck + full prototype plans + BOM + totals)
+     Author:  Tomas Chadwick <tchadwick@hks.harvard.edu>
+     Injected just before </body> by console_nextsteps.py. Uses the upstream
+     <dialog>/.modal pattern and theme tokens; the upstream file is unchanged.
+
+     Slides: 1 roadmap, 2 tag form factors, 3-5 field-kit prototypes (full
+     platform specs + prototype bill of materials with a system total), 6
+     comparison. Add a step by adding another <section class="ns-slide">.
+
+     NOTE on costs: rough single-unit, COTS, prototype-scale engineering
+     estimates to frame scope -- NOT procurement quotes. Volume cuts tags 3-10x.
+     ============================================================================ -->
+<dialog id="nextModal" aria-labelledby="nextModalTitle">
+  <form method="dialog" class="modal">
+    <div class="kv"><h2 id="nextModalTitle">Next steps</h2><button class="hbtn" value="cancel" aria-label="Close">CLOSE</button></div>
+
+    <div class="ns-deck" id="nsDeck">
+
+      <!-- ===== SLIDE 1 : From laptop to field ================================= -->
+      <section class="ns-slide active" data-title="From laptop to field">
+        <div class="eyebrow">1 &middot; FROM LAPTOP TO FIELD</div>
+        <div class="ns-arc">
+          <span class="from"><b>&#9634; TODAY &mdash; bench demo</b><small>the laptop runs the protocol and drives every device</small></span>
+          <span class="ar"></span>
+          <span class="to"><b>GOAL &mdash; field-independent &#9992;</b><small>battery powered &middot; radio only &middot; no laptop in the loop</small></span>
+        </div>
+        <div class="ns-stages">
+          <div class="ns-card">
+            <svg viewBox="0 0 120 72" fill="none" aria-hidden="true">
+              <rect x="12" y="12" width="46" height="30" rx="2" stroke="#7DD3FC" stroke-width="2"/>
+              <rect x="18" y="18" width="34" height="18" rx="1" fill="#0B2531"/>
+              <path d="M8 46 h54 l5 7 H3 Z" fill="#0C110D" stroke="#7DD3FC" stroke-width="2"/>
+              <path d="M58 24 C 80 24, 82 20, 96 20" stroke="#FFB020" stroke-width="2" stroke-dasharray="3 3"/>
+              <path d="M58 34 C 82 34, 84 50, 98 50" stroke="#FFB020" stroke-width="2" stroke-dasharray="3 3"/>
+              <rect x="96" y="12" width="17" height="16" rx="2" fill="#2E2410" stroke="#FFB020" stroke-width="2"/>
+              <rect x="98" y="42" width="17" height="16" rx="2" fill="#2E2410" stroke="#FFB020" stroke-width="2"/>
+            </svg>
+            <span class="ns-badge now">YOU ARE HERE</span>
+            <div class="ns-step">STAGE 1</div>
+            <div class="ns-title">Laptop in the loop</div>
+            <ul>
+              <li>Python protocol + this console run on the laptop</li>
+              <li>Band &amp; dongle tethered over USB; dog over Wi-Fi / Bluetooth</li>
+              <li>Great for demos &mdash; nothing deploys on its own yet</li>
+            </ul>
+          </div>
+          <div class="ns-card">
+            <svg viewBox="0 0 120 72" fill="none" aria-hidden="true">
+              <rect x="6" y="22" width="30" height="19" rx="2" stroke="#3A4A3E" stroke-width="2"/>
+              <path d="M36 31 h15" stroke="#FF6B5E" stroke-width="2"/>
+              <path d="M69 31 h13" stroke="#FF6B5E" stroke-width="2"/>
+              <path d="M56 25 l8 12 M64 25 l-8 12" stroke="#FF6B5E" stroke-width="2"/>
+              <rect x="82" y="16" width="30" height="38" rx="4" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+              <circle cx="97" cy="35" r="6" fill="#5BE37D"/>
+              <path d="M82 25 h-6 M82 35 h-6 M82 45 h-6 M112 25 h6 M112 35 h6 M112 45 h6" stroke="#5BE37D" stroke-width="2"/>
+            </svg>
+            <span class="ns-badge wip">IN PROGRESS</span>
+            <div class="ns-step">STAGE 2</div>
+            <div class="ns-title">Cut the cord: logic on the band</div>
+            <ul>
+              <li>band.py ported to ESP32 firmware &mdash; same test vectors</li>
+              <li>Band verifies &amp; auto-replies on its own, no laptop</li>
+              <li>Compiles &amp; passes host tests; flash to a real board next</li>
+            </ul>
+          </div>
+          <div class="ns-card">
+            <svg viewBox="0 0 120 72" fill="none" aria-hidden="true">
+              <rect x="30" y="26" width="42" height="32" rx="4" fill="#0C110D" stroke="#FFB020" stroke-width="2"/>
+              <rect x="38" y="37" width="22" height="11" rx="1" stroke="#5BE37D" stroke-width="2"/>
+              <rect x="60" y="40" width="3" height="5" fill="#5BE37D"/>
+              <rect x="40" y="39" width="13" height="7" fill="#5BE37D"/>
+              <path d="M72 26 l9 -11" stroke="#FFB020" stroke-width="2"/>
+              <path d="M83 13 a11 11 0 0 1 9 9" stroke="#7DD3FC" stroke-width="2" fill="none"/>
+              <path d="M85 6 a19 19 0 0 1 15 15" stroke="#7DD3FC" stroke-width="2" fill="none" opacity="0.55"/>
+            </svg>
+            <span class="ns-badge road">ROADMAP</span>
+            <div class="ns-step">STAGE 3</div>
+            <div class="ns-title">Stand-alone units</div>
+            <ul>
+              <li>Interrogator moves off the laptop onto the drone's board</li>
+              <li>Battery + wake-on-radio duty cycling; then measure current</li>
+              <li>RTC keeps the hour-slot clock; nonce cache in RAM</li>
+            </ul>
+          </div>
+          <div class="ns-card">
+            <svg viewBox="0 0 120 72" fill="none" aria-hidden="true">
+              <g stroke="#5BE37D" stroke-width="1.5" opacity="0.55">
+                <path d="M24 18 L60 40 M96 18 L60 40 M24 54 L60 40 M96 54 L60 40 M24 18 L96 18 M24 54 L96 54"/>
+              </g>
+              <circle cx="24" cy="18" r="6" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+              <circle cx="96" cy="18" r="6" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+              <circle cx="24" cy="54" r="6" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+              <circle cx="96" cy="54" r="6" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+              <circle cx="60" cy="40" r="9" fill="#2E2410" stroke="#FFB020" stroke-width="2"/>
+              <circle cx="60" cy="40" r="2.6" fill="#FFB020"/>
+            </svg>
+            <span class="ns-badge road">ROADMAP</span>
+            <div class="ns-step">STAGE 4</div>
+            <div class="ns-title">Hardened for the field</div>
+            <ul>
+              <li>Per-band keys &mdash; one capture no longer burns the group</li>
+              <li>Nonce cache that survives a reboot</li>
+              <li>Mesh + IR fallback; point-to-multipoint</li>
+              <li>Field key provisioning</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SLIDE 2 : The tag -- three form factors ======================= -->
+      <section class="ns-slide" data-title="The tag — three form factors">
+        <div class="eyebrow">2 &middot; WHO CARRIES THE KEY &mdash; THREE FORM FACTORS</div>
+        <div class="ns-mission">The person's tag can be purpose-built, bolted onto what they already wear, or just software. The trade is always the same one: <b>LoRa range and hardening</b> vs. <b>cost and adoption</b>.</div>
+        <div style="overflow-x:auto">
+          <table class="ns-table">
+            <thead><tr>
+              <th style="min-width:124px"></th>
+              <th style="color:#5BE37D">A &middot; PURPOSE-BUILT BAND<br><span style="font-weight:400;color:var(--muted)">custom hardware</span></th>
+              <th style="color:#FFB020">B &middot; CLIP-ON STRAP BUTTON<br><span style="font-weight:400;color:var(--muted)">add-on to an existing watch</span></th>
+              <th style="color:#7DD3FC">C &middot; SMARTWATCH / PHONE APP<br><span style="font-weight:400;color:var(--muted)">software only</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><td>What it is</td><td>Wrist / patch device we design end-to-end</td><td>Tiny LoRa button that clips to any strap or MOLLE</td><td>The protocol shipped as an app on issued devices</td></tr>
+              <tr><td>Radio &amp; range</td><td>Onboard LoRa SX1262 &mdash; <b>km-scale</b> to the interrogator</td><td>Onboard LoRa &mdash; <b>keeps the range</b>, pairs to phone over BLE for UI</td><td><b>No LoRa</b> &mdash; cellular / Wi-Fi / BLE only (short) unless a LoRa dongle is added</td></tr>
+              <tr><td>Location (GNSS)</td><td>Dedicated u-blox MAX-M10S</td><td>Borrows the paired phone/watch GPS; coarse RF otherwise</td><td>Device GPS (good) + maps built in</td></tr>
+              <tr><td>Key storage</td><td>ATECC608 secure element, tamper-wipe</td><td>Small secure element; single ALIVE / duress button</td><td>OS secure enclave + biometric (bigger attack surface)</td></tr>
+              <tr><td>Battery / standby</td><td>Days standby, 12&ndash;24 h active, mission-sized</td><td>Smaller cell, days standby</td><td>Heavy drain; OS backgrounding limits always-listen</td></tr>
+              <tr><td>Ruggedness</td><td>IP68, heat / shock rated</td><td>Moderate, pottable</td><td>Consumer-grade</td></tr>
+              <tr><td>Adoption</td><td>Another device to issue &amp; charge</td><td>Rides existing kit, minimal</td><td>Instant, zero extra hardware, scales free</td></tr>
+              <tr><td>Best for</td><td>Combat, wildfire &mdash; range &amp; hardening matter</td><td>USAR, fast issue, low cost, bulk unit roll-out</td><td>Rear areas, training, command staff where there's coverage</td></tr>
+              <tr><td>Est. cost / unit</td><td>~$150&ndash;320</td><td>~$60&ndash;120</td><td>~$0 extra HW (dev only) &middot; +$40&ndash;80 LoRa dongle for range</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ns-note"><b>Takeaway:</b> LoRa is the differentiator &mdash; a phone or watch alone can't reach the drone at range, so add a small LoRa dongle and option C converges on option B. Mix per role: hardened bands at the edge, clip-ons for bulk issue, apps for rear / coverage areas. All three run the identical 32-byte HMAC exchange.</div>
+      </section>
+
+      <!-- ===== SLIDE 3 : GUARDIAN -- Combat CSAR ============================= -->
+      <section class="ns-slide" data-title="Guardian — Combat CSAR">
+        <div class="ns-head">
+          <svg viewBox="0 0 110 64" fill="none" aria-hidden="true">
+            <ellipse cx="30" cy="14" rx="16" ry="3.5" stroke="#FFB020" stroke-width="2"/>
+            <ellipse cx="72" cy="14" rx="16" ry="3.5" stroke="#FFB020" stroke-width="2"/>
+            <path d="M30 16 V26 M72 16 V26 M30 26 H72" stroke="#FFB020" stroke-width="2"/>
+            <rect x="44" y="22" width="14" height="8" rx="2" fill="#2E2410" stroke="#FFB020" stroke-width="2"/>
+            <circle cx="51" cy="50" r="7" fill="#14301C" stroke="#5BE37D" stroke-width="2"/>
+            <path d="M38 50 h-6 M64 50 h6 M51 37 v-5 M51 63 v-5" stroke="#5BE37D" stroke-width="2"/>
+            <path d="M51 30 V43" stroke="#5BE37D" stroke-width="1.5" stroke-dasharray="2 3"/>
+          </svg>
+          <div>
+            <div class="ns-kicker">3 &middot; PROTOTYPE &middot; COMBAT CSAR</div>
+            <div class="ns-name" style="color:#FFB020">GUARDIAN</div>
+            <div class="ns-mission">Confirm a downed / isolated friendly is really friendly before an extraction asset commits &mdash; cut fratricide risk during recovery.</div>
+          </div>
+          <span class="ns-badge road" style="margin-left:auto">CONCEPT</span>
+        </div>
+        <div class="ns-scn2">
+          <div class="ns-parts2">
+            <div class="ns-pcard"><h4>WORN TAG <span>purpose-built band (form factor A)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Size / weight</dt><dd>~40&times;40&times;12 mm, ~45 g, IP68, &minus;20&hellip;60&deg;C</dd></div>
+                <div><dt>Core</dt><dd>nRF52840 + SX1262 LoRa (+PA/LNA), ATECC608 secure element</dd></div>
+                <div><dt>GNSS</dt><dd>u-blox MAX-M10S (GPS/Galileo/GLONASS/BeiDou, ~1.5 m)</dd></div>
+                <div><dt>Sensors</dt><dd>IMU (man-down), covert IR LED (NVG), haptic, duress button</dd></div>
+                <div><dt>Power</dt><dd>1000 mAh LiPo &rarr; days standby / 12&ndash;24 h active</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>AERIAL INTERROGATOR <span>VTOL fixed-wing UAS</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Dimensions</dt><dd>1.6&ndash;2.5 m span, 2.5&ndash;4 kg MTOW, ~0.5&ndash;1 kg payload</dd></div>
+                <div><dt>Endurance</dt><dd>2&ndash;6 h, 60&ndash;90 km/h cruise, ceiling ~4&ndash;5 km</dd></div>
+                <div><dt>Autopilot</dt><dd>Cube Orange+ / Pixhawk (PX4/ArduPilot)</dd></div>
+                <div><dt>GNSS / nav</dt><dd>Multi-band RTK (ZED-F9P) + INS dead-reckoning when GNSS-denied</dd></div>
+                <div><dt>Payload</dt><dd>EO/IR gimbal (640&times;512 LWIR + EO zoom); SX1262 interrogator +1&ndash;2 W PA, patch + omni</dd></div>
+                <div><dt>Compute</dt><dd>Jetson Orin NX / Pi CM4 &mdash; onboard verify + geoloc</dd></div>
+                <div><dt>Datalink</dt><dd>Encrypted MANET (Silvus-class) + SATCOM fallback; LoRa to tags</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>GROUND NEAR-CHECK <span>quadruped (Unitree Go2-class)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Dimensions</dt><dd>~0.7&times;0.3&times;0.4 m, 15&ndash;25 kg, 5&ndash;10 kg payload</dd></div>
+                <div><dt>Mobility</dt><dd>3&ndash;5 m/s, stairs/rubble, IP54+, 1&ndash;2 h runtime</dd></div>
+                <div><dt>Sensors</dt><dd>LiDAR + depth + thermal cam; onboard LoRa; RTK optional</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>COMMS &amp; BASE <span>mesh relays + operator console</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Relays</dt><dd>SX1262 +PA, solar/Li-ion LoRa mesh nodes (&times;3)</dd></div>
+                <div><dt>Base</dt><dd>Rugged tablet (this UI) + LoRa gateway + MANET + SATCOM terminal</dd></div>
+                <div><dt>Security</dt><dd>Frequency agility, low-probability-of-intercept</dd></div>
+              </dl>
+            </div>
+          </div>
+          <aside class="ns-fin">
+            <h4>PROTOTYPE BILL OF MATERIALS</h4>
+            <table class="ns-bom">
+              <tr><td><span class="q">6&times;</span> worn tag</td><td>$1,320</td></tr>
+              <tr><td><span class="q">1&times;</span> VTOL UAS (airframe + autopilot + datalink)</td><td>$12,000</td></tr>
+              <tr><td><span class="q">1&times;</span> aerial interrogator + Jetson payload</td><td>$1,800</td></tr>
+              <tr><td><span class="q">1&times;</span> quadruped + sensor payload</td><td>$4,000</td></tr>
+              <tr><td><span class="q">3&times;</span> LoRa mesh relay</td><td>$750</td></tr>
+              <tr><td><span class="q">1&times;</span> rugged base + gateway + SATCOM</td><td>$3,500</td></tr>
+              <tr><td><span class="q">~10%</span> integration, spares, test</td><td>$2,350</td></tr>
+            </table>
+            <div class="ns-total"><span>TOTAL PROTOTYPE</span><span>~ $25,700</span></div>
+            <small>One system: 6 tags + 1 UAS + 1 quadruped + mesh + base. COTS, single-build estimate.</small>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== SLIDE 4 : EMBER -- Wildfire =================================== -->
+      <section class="ns-slide" data-title="Ember — Wildfire crew safety">
+        <div class="ns-head">
+          <svg viewBox="0 0 110 64" fill="none" aria-hidden="true">
+            <path d="M50 58 C34 50 36 36 46 28 C46 36 52 36 52 30 C62 36 66 46 60 54 C58 57 54 59 50 58 Z" fill="#2A1512" stroke="#FF6B5E" stroke-width="2"/>
+            <path d="M50 52 C44 48 45 41 50 37 C50 42 54 42 54 39 C58 43 59 48 55 52 C54 54 52 54 50 52 Z" fill="#FF6B5E" opacity="0.5"/>
+            <path d="M78 20 a12 12 0 0 1 10 10" stroke="#7DD3FC" stroke-width="2" fill="none"/>
+            <path d="M80 12 a21 21 0 0 1 18 18" stroke="#7DD3FC" stroke-width="2" fill="none" opacity="0.55"/>
+            <rect x="70" y="30" width="4" height="4" fill="#7DD3FC"/>
+          </svg>
+          <div>
+            <div class="ns-kicker">4 &middot; PROTOTYPE &middot; WILDFIRE</div>
+            <div class="ns-name" style="color:#FF6B5E">EMBER</div>
+            <div class="ns-mission">Track and account for wildland crews in smoke, flag them "do-not-drop" to air tankers, and auto-alert on man-down or heat stress.</div>
+          </div>
+          <span class="ns-badge road" style="margin-left:auto">CONCEPT</span>
+        </div>
+        <div class="ns-scn2">
+          <div class="ns-parts2">
+            <div class="ns-pcard"><h4>PPE TAG <span>purpose-built, heat-rated (form factor A)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Size / weight</dt><dd>~50&times;40&times;15 mm, ~70 g, enclosure rated ~85&deg;C</dd></div>
+                <div><dt>Core</dt><dd>ESP32-S3 + SX1262 LoRa 915 MHz</dd></div>
+                <div><dt>GNSS</dt><dd>u-blox MAX-M10S, into ICS map</dd></div>
+                <div><dt>Sensors</dt><dd>Ambient-temp, HR + accel (heat stress / man-down)</dd></div>
+                <div><dt>Alerting</dt><dd>Bright strobe + IR + buzzer for spotting</dd></div>
+                <div><dt>Power</dt><dd>3000 mAh &rarr; full 12&ndash;24 h shift</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>PERSISTENT EYE <span>long-endurance fixed-wing UAS</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Dimensions</dt><dd>2&ndash;3 m span, 3&ndash;6 kg, ~1 kg payload</dd></div>
+                <div><dt>Endurance</dt><dd>6&ndash;12 h on-station over the fire</dd></div>
+                <div><dt>GNSS / nav</dt><dd>RTK GNSS + INS; fly through smoke on instruments</dd></div>
+                <div><dt>Payload</dt><dd>Thermal mapping cam + LoRa interrogator + mesh relay</dd></div>
+                <div><dt>Alt. platform</dt><dd>Tethered aerostat for days aloft (+$10&ndash;15k)</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>RIDGE RELAYS <span>solar LoRa repeaters (&times;6)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Build</dt><dd>SX1262 +PA, 20 W panel, LiFePO4, pole-mount</dd></div>
+                <div><dt>Role</dt><dd>Bridge terrain &amp; smoke columns; drop-and-leave</dd></div>
+                <div><dt>Power</dt><dd>Solar &rarr; indefinite unattended</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>INCIDENT BASE <span>ICS-integrated console</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Console</dt><dd>Crew positions on the fire perimeter; roll-call board</dd></div>
+                <div><dt>Link</dt><dd>LoRa gateway + Starlink backhaul (no cell at the fire)</dd></div>
+                <div><dt>Air coord</dt><dd>"Do-not-drop" friendly layer for tankers</dd></div>
+              </dl>
+            </div>
+          </div>
+          <aside class="ns-fin">
+            <h4>PROTOTYPE BILL OF MATERIALS</h4>
+            <table class="ns-bom">
+              <tr><td><span class="q">20&times;</span> PPE tag (one crew)</td><td>$3,200</td></tr>
+              <tr><td><span class="q">1&times;</span> fixed-wing UAS + thermal + interrogator</td><td>$16,000</td></tr>
+              <tr><td><span class="q">6&times;</span> solar ridge relay</td><td>$2,100</td></tr>
+              <tr><td><span class="q">1&times;</span> incident base + gateway + Starlink</td><td>$3,000</td></tr>
+              <tr><td><span class="q">~10%</span> integration, spares, test</td><td>$2,430</td></tr>
+            </table>
+            <div class="ns-total"><span>TOTAL PROTOTYPE</span><span>~ $26,700</span></div>
+            <small>One crew kit. Aerostat variant adds ~$10&ndash;15k for days of persistence.</small>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== SLIDE 5 : RUBBLE -- Collapse USAR ============================= -->
+      <section class="ns-slide" data-title="Rubble — Collapse USAR">
+        <div class="ns-head">
+          <svg viewBox="0 0 110 64" fill="none" aria-hidden="true">
+            <path d="M6 56 h98" stroke="#3A4A3E" stroke-width="2"/>
+            <rect x="10" y="44" width="16" height="12" fill="#1B271F" stroke="#8FA392" stroke-width="1.5"/>
+            <rect x="26" y="38" width="14" height="18" fill="#1B271F" stroke="#8FA392" stroke-width="1.5"/>
+            <rect x="40" y="46" width="16" height="10" fill="#1B271F" stroke="#8FA392" stroke-width="1.5"/>
+            <g transform="translate(70 40)">
+              <rect x="0" y="4" width="22" height="11" rx="2" fill="#2A1B3A" stroke="#C4A7FF" stroke-width="2"/>
+              <path d="M2 15 v5 M8 15 v5 M14 15 v5 M20 15 v5" stroke="#C4A7FF" stroke-width="2"/>
+              <path d="M22 8 h6" stroke="#C4A7FF" stroke-width="2"/>
+            </g>
+            <path d="M96 40 a10 10 0 0 1 8 8" stroke="#7DD3FC" stroke-width="2" fill="none"/>
+            <circle cx="33" cy="47" r="2.5" fill="#5BE37D"/>
+          </svg>
+          <div>
+            <div class="ns-kicker">5 &middot; PROTOTYPE &middot; EARTHQUAKE / COLLAPSE USAR</div>
+            <div class="ns-name" style="color:#C4A7FF">RUBBLE</div>
+            <div class="ns-mission">Find and verify trapped responders and tagged team members inside collapsed structures, where GPS and radio barely reach &mdash; the ground robot carries the near-check into the voids.</div>
+          </div>
+          <span class="ns-badge road" style="margin-left:auto">CONCEPT</span>
+        </div>
+        <div class="ns-scn2">
+          <div class="ns-parts2">
+            <div class="ns-pcard"><h4>LOW-COST TAG <span>clip-on / disposable (form factor B)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Size / weight</dt><dd>~35&times;25&times;10 mm, ~25 g, air-droppable</dd></div>
+                <div><dt>Core</dt><dd>ESP32-C3 + SX1262 LoRa + BLE</dd></div>
+                <div><dt>Location</dt><dd>No GNSS in voids &rarr; BLE/UWB ranging + acoustic; GPS only at surface staging</dd></div>
+                <div><dt>Sensors</dt><dd>Accel (man-down), piezo acoustic ping</dd></div>
+                <div><dt>Power</dt><dd>Small cell &rarr; weeks standby, semi-disposable</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>VOID CRAWLER <span>tracked / quadruped UGV (MechDog, grown up)</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Dimensions</dt><dd>~0.5&times;0.35&times;0.2 m, 10&ndash;20 kg, IP67</dd></div>
+                <div><dt>Mobility</dt><dd>Crawl over debris; optional comms/power tether; 1&ndash;2 h</dd></div>
+                <div><dt>Nav</dt><dd>GNSS-denied &rarr; LiDAR + visual-inertial SLAM; UWB anchors</dd></div>
+                <div><dt>Sensors</dt><dd>Thermal, CO&#8322;/gas, 2-way audio, LoRa + BLE scanner</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>EXTERIOR DRONE <span>small thermal quad</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Dimensions</dt><dd>~0.3 m, 1&ndash;2 kg, 20&ndash;40 min</dd></div>
+                <div><dt>GNSS</dt><dd>RTK GNSS + obstacle avoidance</dd></div>
+                <div><dt>Payload</dt><dd>Thermal + RGB; spots heat, cues the crawler</dd></div>
+              </dl>
+            </div>
+            <div class="ns-pcard"><h4>USAR BASE <span>command + 3D map</span></h4>
+              <dl class="ns-dl">
+                <div><dt>Console</dt><dd>3D void / hazard map from the crawler's SLAM</dd></div>
+                <div><dt>Link</dt><dd>Two-way "I'm alive" from a trapped responder's band</dd></div>
+                <div><dt>Relay</dt><dd>Crawler acts as a mobile node down into the rubble</dd></div>
+              </dl>
+            </div>
+          </div>
+          <aside class="ns-fin">
+            <h4>PROTOTYPE BILL OF MATERIALS</h4>
+            <table class="ns-bom">
+              <tr><td><span class="q">30&times;</span> low-cost tag</td><td>$2,100</td></tr>
+              <tr><td><span class="q">1&times;</span> void crawler UGV</td><td>$6,000</td></tr>
+              <tr><td><span class="q">1&times;</span> crawler sensor payload (gas/thermal/SLAM)</td><td>$2,000</td></tr>
+              <tr><td><span class="q">1&times;</span> exterior thermal quad</td><td>$4,000</td></tr>
+              <tr><td><span class="q">1&times;</span> USAR base + 3D mapping</td><td>$3,000</td></tr>
+              <tr><td><span class="q">~10%</span> integration, spares, test</td><td>$1,710</td></tr>
+            </table>
+            <div class="ns-total"><span>TOTAL PROTOTYPE</span><span>~ $18,800</span></div>
+            <small>Cheapest kit: disposable tags, one crawler, one drone. Near-check already demoed on the MechDog.</small>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== SLIDE 6 : One protocol, three kits =========================== -->
+      <section class="ns-slide" data-title="One protocol, three kits">
+        <div class="eyebrow">6 &middot; ONE PROTOCOL, THREE FIELD KITS</div>
+        <div class="ns-mission">Same core everywhere &mdash; the 32-byte HMAC challenge&ndash;response, an SX1262 LoRa link, an ESP32-class tag, and this console. What changes per scenario is the packaging, the sensors, and which interrogator carries it.</div>
+        <div style="overflow-x:auto">
+          <table class="ns-table">
+            <thead><tr>
+              <th style="min-width:150px"></th>
+              <th style="color:#FFB020">GUARDIAN<br><span style="font-weight:400;color:var(--muted)">Combat CSAR</span></th>
+              <th style="color:#FF6B5E">EMBER<br><span style="font-weight:400;color:var(--muted)">Wildfire</span></th>
+              <th style="color:#C4A7FF">RUBBLE<br><span style="font-weight:400;color:var(--muted)">Collapse USAR</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><td>Tag form factor</td><td>Purpose-built band (A)</td><td>Purpose-built, heat-rated (A)</td><td>Clip-on / disposable (B)</td></tr>
+              <tr><td>Primary interrogator</td><td>VTOL UAS + quadruped</td><td>Fixed-wing / aerostat + ridge relays</td><td>Void-crawling UGV + quad</td></tr>
+              <tr><td>Link range</td><td>5&ndash;15 km LOS, mesh-extended</td><td>2&ndash;10 km w/ repeaters</td><td>1&ndash;3 km surface, relayed into voids</td></tr>
+              <tr><td>Tag autonomy</td><td>3&ndash;7 d standby</td><td>Full 12&ndash;24 h shift</td><td>Weeks standby</td></tr>
+              <tr><td>Hardening</td><td>IP68, tamper wipe, LPI comms</td><td>Heat-rated ~85&deg;C, hi-vis + IR</td><td>Cheap, rugged, semi-disposable</td></tr>
+              <tr><td>Signature capability</td><td>Duress code + IR countersign</td><td>"Do-not-drop" air-tanker marker</td><td>Two-way "I'm alive" in GPS-denied voids</td></tr>
+              <tr><td>Est. tag cost</td><td>~$180&ndash;320</td><td>~$110&ndash;220</td><td>~$45&ndash;110</td></tr>
+              <tr><td><b>Total prototype system</b></td><td><b style="color:#5BE37D">~$25.7k</b></td><td><b style="color:#5BE37D">~$26.7k</b></td><td><b style="color:#5BE37D">~$18.8k</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ns-note">Totals are rough single-build, COTS, prototype-scale engineering estimates to frame scope &mdash; not procurement quotes; at volume, tag cost drops ~3&ndash;10&times; and airframes dominate. Every kit inherits the demo's safety rules: never FRIENDLY without a verified exchange, silent on any failure, constant-time tag compare. Use follows the project's RESPONSIBLE_USE / DISCLAIMER notes.</div>
+      </section>
+
+    </div>
+
+    <!-- deck nav -->
+    <div class="ns-nav">
+      <button type="button" class="hbtn" id="nsPrev">&#9666; PREV</button>
+      <div class="ns-dots" id="nsDots" role="tablist" aria-label="Slides"></div>
+      <span class="ns-count" id="nsCount">1 / 6</span>
+      <button type="button" class="hbtn" id="nsNext">NEXT &#9656;</button>
+    </div>
+
+    <div class="ns-foot">
+      Build <b>nextsteps-v3</b> &middot; add-on by Tomas Chadwick, layered on the upstream console without modifying it. Full hardware plan in <b>CLAUDE.md</b>.
+    </div>
+  </form>
+</dialog>
