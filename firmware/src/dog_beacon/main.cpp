@@ -32,6 +32,7 @@ void print_id(uint64_t id) {
 }
 rescue::FrameParser parser;
 bool radio_ok = false, clock_ok = false;
+int16_t radio_code = RADIOLIB_ERR_UNKNOWN;
 volatile bool rx_flag = false;
 uint64_t base_unix_ms = 0;
 uint32_t base_millis = 0;
@@ -49,6 +50,7 @@ void listen(uint8_t ch) {
 
 void status() {
   Serial.print(F("#OK dog radio=")); Serial.print(radio_ok ? F("ok") : F("missing"));
+  Serial.print(F(" code=")); Serial.print(radio_code);
   Serial.print(F(" clock=")); Serial.print(clock_ok ? F("set") : F("NOT-set"));
   Serial.print(F(" auto=")); Serial.print(period_seconds);
   Serial.print(F(" paired=")); Serial.println(pairing_ok ? peer_count : 0);
@@ -128,6 +130,7 @@ void setup() {
   }
   if (st == RADIOLIB_ERR_NONE) st = radio.setDataShaping(FSK_SHAPING);
   if (st == RADIOLIB_ERR_NONE) st = radio.setCrcFiltering(true);
+  radio_code = st;
   radio_ok = st == RADIOLIB_ERR_NONE;
   if (radio_ok) { radio.setPacketReceivedAction(on_rx); radio.startReceive(); }
   Serial.print(F("#HELLO dog radio=")); Serial.print(radio_ok ? F("ok") : F("missing"));
