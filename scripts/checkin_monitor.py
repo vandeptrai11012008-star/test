@@ -24,7 +24,7 @@ class Telemetry:
         self.clock = clock
         self.lock = threading.Lock()
         self.connected = False
-        self.error = "Chưa kết nối USB"
+        self.error = "USB not connected"
         self.radio = self.device_clock = None
         self.peers = {}
         self.logs = deque(maxlen=100)
