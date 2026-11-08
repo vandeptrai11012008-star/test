@@ -1,13 +1,12 @@
-// Feather 32u4 RFM69HCW: periodic discovery with a separate human ALIVE response.
+// Feather 32u4 RFM69HCW or RFM9x in FSK mode: periodic discovery with a separate human ALIVE response.
 // No robot movement. USB #T sets the shared hopping clock; #A 0 stops broadcasts.
 #include <Arduino.h>
-#include <RadioLib.h>
 #include "config.h"
 #include "hop.h"
 #include "periodic_dog.h"
+#include "beacon_radio.h"
 
 static const uint8_t KEY[rescue::KEY_LEN] = GROUP_KEY_BYTES;
-RF69 radio = new Module(8, 7, 4, RADIOLIB_NC);
 HopSchedule schedule(KEY);
 #ifndef PERIODIC_DOG_ID
 #define PERIODIC_DOG_ID 0ULL
@@ -32,7 +31,7 @@ void print_id(uint64_t id) {
 }
 rescue::FrameParser parser;
 bool radio_ok = false, clock_ok = false;
-int16_t radio_code = RADIOLIB_ERR_UNKNOWN;
+int16_t radio_code = -1;
 volatile bool rx_flag = false;
 uint64_t base_unix_ms = 0;
 uint32_t base_millis = 0;
@@ -43,9 +42,9 @@ uint32_t now_slot() { return now_ms() / (1000ULL * rescue::SLOT_SECONDS); }
 void on_rx() { rx_flag = true; }
 
 void listen(uint8_t ch) {
-  radio.setFrequency(hop_freq_mhz(ch));
+  radio_tune(ch);
   channel = ch;
-  radio.startReceive();
+  radio_listen();
 }
 
 void status() {
@@ -122,19 +121,12 @@ void setup() {
   }
   for (uint8_t i = 0; pairing_ok && i < peer_count; ++i)
     beacons[i] = new rescue::PeriodicDog(peers[i].key, PERIODIC_DOG_ID, peers[i].id);
-  int st = radio.begin(FSK_FREQ_MHZ, FSK_BITRATE_KBPS, FSK_DEV_KHZ, FSK_RXBW_KHZ, FSK_POWER_DBM, FSK_PREAMBLE_BITS);
-  if (st == RADIOLIB_ERR_NONE) st = radio.setOutputPower(FSK_POWER_DBM, RFM69_HIGH_POWER);
-  if (st == RADIOLIB_ERR_NONE) {
-    uint8_t sync[] = FSK_SYNC_WORD;
-    st = radio.setSyncWord(sync, sizeof sync);
-  }
-  if (st == RADIOLIB_ERR_NONE) st = radio.setDataShaping(FSK_SHAPING);
-  if (st == RADIOLIB_ERR_NONE) st = radio.setCrcFiltering(true);
+  int st = begin_radio();
   radio_code = st;
-  radio_ok = st == RADIOLIB_ERR_NONE;
-  if (radio_ok) { radio.setPacketReceivedAction(on_rx); radio.startReceive(); }
+  radio_ok = st == RADIO_OK;
+  if (radio_ok) radio_listen();
   Serial.print(F("#HELLO dog radio=")); Serial.print(radio_ok ? F("ok") : F("missing"));
-  Serial.print(F(" model=RFM69HCW code=")); Serial.println(st);
+  Serial.print(BEACON_RADIO_MODEL); Serial.println(st);
   status();
 }
 
@@ -143,19 +135,18 @@ void loop() {
     if (parser.feed((uint8_t)Serial.read()) == rescue::FrameParser::LINE) command(parser.line());
   }
   if (!radio_ok || !clock_ok || !pairing_ok) return;
-  if (rx_flag) {
+  if (radio_ready()) {
     rx_flag = false;
     uint8_t raw[rescue::PACKET_LEN];
-    size_t len = radio.getPacketLength();
-    int st = radio.readData(raw, sizeof raw);
-    for (uint8_t i = 0; st == RADIOLIB_ERR_NONE && i < peer_count; ++i) {
+    int len = radio_read(raw);
+    for (uint8_t i = 0; len == (int)rescue::PACKET_LEN && i < peer_count; ++i) {
       if (!beacons[i]->receive(raw, len, millis(), now_slot())) continue;
       bool confirmed = beacons[i]->state(millis()) == rescue::PeriodicDog::CONFIRMED;
       Serial.print(confirmed ? F("#PERSON_CONFIRMED band=") : F("#BAND_SEEN band="));
       print_id(peers[i].id); Serial.println(confirmed ? F(" next=2h") : F(" wait=button"));
       break;
     }
-    radio.startReceive();
+    radio_listen();
   }
   uint32_t now = millis();
   bool any_confirmed = false;
@@ -177,9 +168,9 @@ void loop() {
     // Same challenge on neighbouring dwell channels accommodates small clock drift.
     const int8_t offsets[] = {0, 1, -1};
     for (uint8_t i = 0; i < 3; ++i) {
-      radio.setFrequency(hop_freq_mhz(schedule.channel(hop + offsets[i])));
-      int st = radio.transmit(raw, sizeof raw);
-      if (st != RADIOLIB_ERR_NONE) Serial.println(F("#ERR transmit"));
+      radio_tune(schedule.channel(hop + offsets[i]));
+      int st = radio_send(raw);
+      if (st != RADIO_OK) Serial.println(F("#ERR transmit"));
     }
     rx_flag = false;
     listen(schedule.channel(hop_slot(now_ms())));

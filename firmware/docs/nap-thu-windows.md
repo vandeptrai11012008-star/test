@@ -4,7 +4,7 @@
 
 Phần cứng của bản này:
 
-- Dog: **Adafruit Feather 32u4 RFM69HCW**.
+- Dog: **Adafruit Feather 32u4 RFM69HCW hoặc RFM9x LoRa 900 MHz**.
 - Vòng: **XIAO ESP32-S3 + Feather 32u4 RFM69HCW**, có nút bấm và đèn/rung.
 - Board và anten đúng băng tần **900/915 MHz**. Code hiện dùng 903–927 MHz;
   nếu board của bạn là 433 MHz hoặc Feather M0/M4, không chọn cấu hình này.
@@ -89,13 +89,21 @@ board liên quan. Giữ bản sao an toàn nếu cần nạp lại sau này.
 
 ### Feather trên dog (ví dụ COM5)
 
+**Chọn đúng chip theo chữ trên board:**
+
+- `RFM69HCW`: dùng target `dog_feather_rfm69` trong lệnh bên dưới.
+- `RFM9x LoRa`: thay target bằng **`dog_feather_periodic_rfm9x`**. Target này
+  chạy FSK để nói chuyện với vòng RFM69, không dùng LoRa modulation.
+- Nếu nạp nhầm target RFM69 vào board RFM9x, radio có thể báo `code=-2`.
+
+
 ```bat
 copy ..\rescue-private-pairing\dog-secrets.h firmware\include\secrets.h
 python -m platformio run -d firmware -e dog_feather_rfm69
 python -m platformio run -d firmware -e dog_feather_rfm69 -t upload --upload-port COM5
 ```
 
-**Chọn `dog_feather_rfm69`, không chọn `dog_feather`** vì target cũ dành cho RFM9x.
+Không chọn `dog_feather`: đó là luồng near-check cũ, không phải check-in định kỳ.
 
 ### Feather radio trên vòng (ví dụ COM7)
 

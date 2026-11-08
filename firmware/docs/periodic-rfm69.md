@@ -1,6 +1,7 @@
 # Paired periodic check-in: Feather RFM69HCW
 
-The dog carries a **Feather 32u4 RFM69HCW**. Each wristband uses a **XIAO ESP32-S3**
+The dog carries a **Feather 32u4 RFM69HCW or RFM9x/SX1276**. RFM9x runs
+**FSK**, not LoRa modulation, to match the wristband. Each wristband uses a **XIAO ESP32-S3**
 for authentication, button and human cues, plus a matching Feather RFM69HCW modem.
 A bare Feather wristband without the XIAO needs different firmware.
 
@@ -41,13 +42,16 @@ Do not overwrite a pre-existing user secrets file without preserving it first.
 
 | Device | Header to copy as `include/secrets.h` | Build target |
 | --- | --- | --- |
-| Dog Feather | `dog-secrets.h` | `dog_feather_rfm69` |
+| Dog Feather RFM69HCW | `dog-secrets.h` | `dog_feather_rfm69` |
+| Dog Feather RFM9x / SX1276 | `dog-secrets.h` | `dog_feather_periodic_rfm9x` |
 | Every wristband Feather modem | `radio-secrets.h` | `feather_radio` |
 | Each wristband XIAO | `band-<THAT_XIAO_ID>-secrets.h` | `band_xiao_feather` |
 
 From `firmware/`, build with `pio run -e TARGET`, then upload with
 `pio run -e TARGET -t upload --upload-port YOUR_DEVICE_PORT`.
-The existing `dog_feather` target is for **RFM9x/SX1276**, not this RFM69HCW build.
+Select the target matching the **label on the radio board**. `RFM9x LoRa`
+is not an RFM69. The existing `dog_feather` target is the older near-check
+workflow; use `dog_feather_periodic_rfm9x` for paired periodic check-in.
 Both the dog and XIAO firmware must be updated: legacy challenges do not carry IDs.
 
 The existing RF profile is **903–927 MHz** and requires 900/915 MHz boards and
