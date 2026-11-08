@@ -287,6 +287,8 @@ void handle(const uint8_t* raw, Medium m) {
     if (event == rescue::PeriodicBand::RETRY_CONFIRMATION) { send(reply, m); return; }
     accepted = event == rescue::PeriodicBand::PROMPT;
   } else {
+    // A paired band never downgrades radio traffic to the legacy plaintext mode.
+    if (periodic_band && m == AIR) return;
     accepted = band.on_packet(raw, rescue::PACKET_LEN, now_slot(), reply, bits);
   }
   if (accepted) {

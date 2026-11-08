@@ -26,6 +26,7 @@ class Telemetry:
         self.connected = False
         self.error = "USB not connected"
         self.radio = self.device_clock = None
+        self.encryption = self.nonce_counter = None
         self.interval = None
         self.peers = {}
         self.logs = deque(maxlen=100)
@@ -35,6 +36,7 @@ class Telemetry:
             self.connected, self.error = connected, error
             if not connected:
                 self.radio = self.device_clock = None
+                self.encryption = self.nonce_counter = None
                 self.interval = None
 
     def line(self, line):
@@ -48,6 +50,8 @@ class Telemetry:
             if line.startswith(("#OK dog ", "#HELLO dog ")):
                 self.radio = fields.get("radio", self.radio)
                 self.device_clock = fields.get("clock", self.device_clock)
+                self.encryption = fields.get("enc", self.encryption)
+                self.nonce_counter = fields.get("counter", self.nonce_counter)
                 interval = fields.get("auto", "")
                 if interval.isdigit():
                     self.interval = int(interval)
@@ -94,6 +98,7 @@ class Telemetry:
                                   remaining_seconds=remaining))
             return {"connected": self.connected, "error": self.error, "radio": self.radio,
                     "clock": self.device_clock, "interval_seconds": self.interval,
+                    "encryption": self.encryption, "nonce_counter": self.nonce_counter,
                     "peers": peers, "logs": list(self.logs)}
 
 

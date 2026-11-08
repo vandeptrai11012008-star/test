@@ -111,3 +111,14 @@ def test_usb_watcher_sets_missing_clock_without_confirming_or_resetting(monkeypa
     assert all(raw == b"#?\n" or raw.startswith(b"#T ") for raw in sent)
     assert state.snapshot()["clock"] == "set"
     assert state.snapshot()["interval_seconds"] == interval
+
+
+def test_encryption_status_is_reported_and_cleared_on_disconnect():
+    state = load_monitor().Telemetry()
+    state.connection(True)
+    state.line("#OK dog radio=ok clock=set auto=2 enc=AES128CCM counter=BLOCKED")
+    assert state.snapshot()["encryption"] == "AES128CCM"
+    assert state.snapshot()["nonce_counter"] == "BLOCKED"
+    state.connection(False)
+    assert state.snapshot()["encryption"] is None
+    assert state.snapshot()["nonce_counter"] is None

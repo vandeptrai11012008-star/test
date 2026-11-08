@@ -1,6 +1,7 @@
 #pragma once
 #include <string.h>
 #include "rescue_core.h"
+#include "aes_ccm.h"
 
 namespace rescue {
 constexpr uint8_t BEACON = 6, BEACON_REPLY = 7, BEACON_ALIVE = 8, BEACON_ACK = 9;
@@ -16,34 +17,57 @@ inline uint64_t get_id(const uint8_t* raw) {
   return id;
 }
 
-// The entire PAD carries DOG_ID(8) | BAND_ID(8), covered by the HMAC.
-// Legacy packet types 1..5 remain unchanged. IDs are public; keys are not.
-inline void make_beacon(const uint8_t key[KEY_LEN], uint8_t type, const uint8_t nonce[NONCE_LEN],
-                        uint32_t slot, uint64_t dog, uint64_t band, uint8_t out[PACKET_LEN]) {
-  Packet p = make(key, type, nonce, slot);
-  encode(p, out);
-  put_id(dog, out + 16); put_id(band, out + 24);
-  tag_ext(key, type, nonce, slot, out + 16, 16, out + 8);
+// Periodic wire v2: clear authenticated TYPE|VER|COUNTER32|SLOT16 (8),
+// CCM tag (8), encrypted DOG_ID64|BAND_ID64 (16). Legacy v1 is rejected here.
+constexpr uint8_t PERIODIC_VERSION = 2;
+inline void periodic_ccm_key(const uint8_t master[KEY_LEN], uint64_t dog, uint64_t band, uint8_t key[16]) {
+  const uint8_t label[] = "RESCUE-CCM-v2";
+  uint8_t context[sizeof label - 1 + 16], full[32];
+  memcpy(context, label, sizeof label - 1);
+  put_id(dog, context + sizeof label - 1); put_id(band, context + sizeof label - 1 + 8);
+  hmac_sha256(master, KEY_LEN, context, sizeof context, full);
+  memcpy(key, full, 16);
+  volatile uint8_t* p = full; for (uint8_t i = 0; i < 32; ++i) p[i] = 0;
 }
-
+inline void periodic_ccm_nonce(uint8_t type, const uint8_t counter[NONCE_LEN], uint32_t slot, uint8_t nonce[13]) {
+  nonce[0] = type; memcpy(nonce + 1, counter, NONCE_LEN);
+  for (uint8_t i = 0; i < 4; ++i) nonce[5 + i] = (uint8_t)(slot >> (24 - 8 * i));
+  nonce[9] = 'R'; nonce[10] = 'B'; nonce[11] = 2; nonce[12] = 0;
+}
+inline void make_beacon(const uint8_t key[KEY_LEN], uint8_t type, const uint8_t counter[NONCE_LEN],
+                        uint32_t slot, uint64_t dog, uint64_t band, uint8_t out[PACKET_LEN]) {
+  uint8_t plain[16], encryption_key[16], nonce[13];
+  memset(out, 0, PACKET_LEN);
+  out[0] = type; out[1] = PERIODIC_VERSION; memcpy(out + 2, counter, NONCE_LEN);
+  out[6] = slot >> 8; out[7] = slot;
+  put_id(dog, plain); put_id(band, plain + 8);
+  periodic_ccm_key(key, dog, band, encryption_key);
+  periodic_ccm_nonce(type, counter, slot, nonce);
+  if (!ccm_seal(encryption_key, nonce, out, 8, plain, 16, out + 16, out + 8)) memset(out, 0, PACKET_LEN);
+  volatile uint8_t* p = encryption_key; for (uint8_t i = 0; i < 16; ++i) p[i] = 0;
+}
 inline bool verify_beacon(const uint8_t key[KEY_LEN], const uint8_t* raw, size_t len,
                           uint8_t type, uint32_t now_slot, uint64_t dog, uint64_t band,
                           uint32_t* matched = nullptr) {
-  if (!dog || !band || len != PACKET_LEN || raw[0] != type || raw[1] != VERSION ||
-      get_id(raw + 16) != dog || get_id(raw + 24) != band) return false;
+  if (!dog || !band || len != PACKET_LEN || raw[0] != type || raw[1] != PERIODIC_VERSION) return false;
   const int8_t offsets[] = {0, -1, 1};
   uint16_t slot16 = ((uint16_t)raw[6] << 8) | raw[7];
+  uint8_t encryption_key[16], expected_ids[16], plain[16], nonce[13];
+  periodic_ccm_key(key, dog, band, encryption_key);
+  put_id(dog, expected_ids); put_id(band, expected_ids + 8);
+  bool valid = false;
   for (int8_t off : offsets) {
     uint32_t slot = now_slot + off;
     if ((slot & 0xffff) != slot16) continue;
-    uint8_t mac[TAG_LEN];
-    tag_ext(key, type, raw + 2, slot, raw + 16, 16, mac);
-    if (ct_equal(mac, raw + 8, TAG_LEN)) {
+    periodic_ccm_nonce(type, raw + 2, slot, nonce);
+    if (ccm_open(encryption_key, nonce, raw, 8, raw + 16, 16, raw + 8, plain) && ct_equal(plain, expected_ids, 16)) {
       if (matched) *matched = slot;
-      return true;
+      valid = true;
+      break;
     }
   }
-  return false;
+  volatile uint8_t* p = encryption_key; for (uint8_t i = 0; i < 16; ++i) p[i] = 0;
+  return valid;
 }
 
 class PeriodicBand {

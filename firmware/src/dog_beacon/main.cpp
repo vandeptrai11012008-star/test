@@ -1,6 +1,8 @@
 // Feather 32u4 RFM69HCW or RFM9x in FSK mode: periodic discovery with a separate human ALIVE response.
 // No robot movement. USB #T sets the shared hopping clock; #A 0 stops broadcasts.
 #include <Arduino.h>
+#include <EEPROM.h>
+#include "nonce_counter.h"
 #include "config.h"
 #include "hop.h"
 #include "periodic_dog.h"
@@ -8,6 +10,13 @@
 
 static const uint8_t KEY[rescue::KEY_LEN] = GROUP_KEY_BYTES;
 HopSchedule schedule(KEY);
+struct CounterStore {
+  uint8_t read(uint8_t address) { return EEPROM.read(address); }
+  void update(uint8_t address, uint8_t value) { EEPROM.update(address, value); }
+};
+CounterStore counter_store;
+rescue::NonceCounter<CounterStore> nonce_counter(counter_store);
+bool nonce_ready = false;
 #ifndef PERIODIC_DOG_ID
 #define PERIODIC_DOG_ID 0ULL
 #endif
@@ -54,7 +63,8 @@ void status() {
   Serial.print(F(" clock=")); Serial.print(clock_ok ? F("set") : F("NOT-set"));
   Serial.print(F(" auto=")); Serial.print(period_seconds);
   Serial.print(F(" paired=")); Serial.print(pairing_ok ? peer_count : 0);
-  Serial.println(F(" clear_wait=1"));
+  Serial.print(F(" clear_wait=1 enc=AES128CCM counter="));
+  Serial.println(nonce_ready ? F("ready") : F("BLOCKED"));
   for (uint8_t i = 0; pairing_ok && i < peer_count; ++i) {
     uint32_t now = millis();
     Serial.print(F("#PEER band=")); print_id(peers[i].id);
@@ -106,23 +116,11 @@ void command(const char* line) {
   } else if (line[1] == '?') status();
 }
 
-void fresh_nonce(uint8_t out[rescue::NONCE_LEN]) {
-  // Prototype entropy, as on the existing AVR dog: no hardware CSPRNG on a 32u4.
-  // A keyed pool mixes runtime timing, analog samples and a counter.
-  static uint8_t pool[32] = {};
-  static uint32_t count = 0;
-  uint8_t material[48];
-  memcpy(material, pool, 32);
-  uint32_t ticks = micros(), sequence = ++count;
-  memcpy(material + 32, &ticks, 4); memcpy(material + 36, &sequence, 4);
-  for (uint8_t i = 0; i < 8; ++i) material[40 + i] = (uint8_t)analogRead(A0) ^ (uint8_t)micros();
-  rescue::hmac_sha256(KEY, sizeof KEY, material, sizeof material, pool);
-  memcpy(out, pool, rescue::NONCE_LEN);
-}
 
 void setup() {
   Serial.begin(115200);
   pinMode(13, OUTPUT);
+  nonce_ready = nonce_counter.begin();
   pairing_ok = PERIODIC_DOG_ID != 0 && peer_count > 0;
   for (uint8_t i = 0; i < peer_count; ++i) {
     if (!peers[i].id) pairing_ok = false;
@@ -143,7 +141,7 @@ void loop() {
   while (Serial.available()) {
     if (parser.feed((uint8_t)Serial.read()) == rescue::FrameParser::LINE) command(parser.line());
   }
-  if (!radio_ok || !clock_ok || !pairing_ok) return;
+  if (!radio_ok || !clock_ok || !pairing_ok || !nonce_ready) return;
   if (radio_ready()) {
     rx_flag = false;
     uint8_t raw[rescue::PACKET_LEN];
@@ -176,8 +174,12 @@ void loop() {
     }
   }
   if (selected >= 0) {
-    uint8_t nonce[rescue::NONCE_LEN], raw[rescue::PACKET_LEN];
-    fresh_nonce(nonce);
+    uint8_t nonce[rescue::NONCE_LEN] = {}, raw[rescue::PACKET_LEN];
+    if (!beacons[selected]->active(now) && !nonce_counter.next(nonce)) {
+      nonce_ready = false;
+      Serial.println(F("#ERR nonce storage: transmissions blocked"));
+      return;
+    }
     beacons[selected]->challenge(now, now_slot(), nonce, raw);
     last_tx_ms = now; have_tx = true;
     // Same challenge on neighbouring dwell channels accommodates small clock drift.

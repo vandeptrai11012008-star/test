@@ -14,7 +14,15 @@ int main() {
   CHECK(!wrist_a.status_led(0)); CHECK(!wrist_b.status_led(0));
   CHECK(a.period() == 2);
   CHECK(a.challenge(100, slot, n, chal));
-  CHECK(rescue::get_id(chal + 16) == dog_id && rescue::get_id(chal + 24) == band_a);
+  CHECK(chal[1] == rescue::PERIODIC_VERSION);
+  CHECK(rescue::get_id(chal + 16) != dog_id && rescue::get_id(chal + 24) != band_a);
+  CHECK(rescue::verify_beacon(key,chal,32,rescue::BEACON,slot,dog_id,band_a));
+  memcpy(bad, chal, 32); bad[1] = 1;
+  CHECK(!rescue::verify_beacon(key,bad,32,rescue::BEACON,slot,dog_id,band_a));
+  for (unsigned i=0; i<32; ++i) {
+    memcpy(bad, chal, 32); bad[i] ^= 1;
+    CHECK(!rescue::verify_beacon(key,bad,32,rescue::BEACON,slot,dog_id,band_a));
+  }
   CHECK(!a.due(2099)); CHECK(a.challenge(2100, slot, next, retry));
   CHECK(!memcmp(chal, retry, 32));
   CHECK(wrist_a.on_packet(chal,32,slot,2200,reply,bits) == rescue::PeriodicBand::PROMPT);

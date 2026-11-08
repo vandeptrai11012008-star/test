@@ -12,7 +12,7 @@ A bare Feather wristband without the XIAO needs different firmware.
 - Read it on USB at 115200: send `#I` (newline). The response is
   `#PAIR_ID <16 hex digits> paired=0|1`. It is also printed at startup.
 - Choose a nonzero 64-bit hex dog ID. Each registered dog–band pair gets a different
-  random 128-bit authentication key. Provisioning creates a separate shared key
+  random 128-bit pair key. Provisioning creates a separate shared key
   for the hopping schedule; learning that schedule key does not authenticate a pair.
 - This 32u4 build supports up to **four registered wristbands**. IDs of other
   wristbands are ignored. Duplicate/zero IDs are rejected.
@@ -77,14 +77,14 @@ USB; synchronize again after a reset. A XIAO forwards its time to its radio mode
    With N eligible bands, each is normally addressed every 2 × N seconds.
 2. Each band has a **30-second** response window. The nonce stays the same across
    retries, so retries do not repeatedly vibrate the wristband.
-3. The addressed band verifies the dog ID, its own ID and the pair-key HMAC.
+3. The addressed band verifies the dog ID, its own ID and the AES-CCM authentication tag.
    It signals the wearer and sends an automatic radio acknowledgement.
    `#BAND_SEEN band=<ID> wait=button` does **not** mean the wearer has responded.
 4. The wearer clicks/releases **twice**, then presses a **third time**, holds
    for at least **2 seconds**, and releases. Each short click must be <=500 ms;
    gaps between presses must be <=1.5 seconds. The whole gesture must finish
    within the 30-second request window. The band sends an authenticated confirmation.
-   The dog logs `#PERSON_CONFIRMED band=<ID> next=2h` and sends a signed ACK.
+   The dog logs `#PERSON_CONFIRMED band=<ID> next=2h` and sends an encrypted, authenticated ACK.
    Only a matching, authenticated ACK makes the band log `#CONFIRMED led=5s`.
    The status LED is normally off. An authenticated addressed request turns it
    on while awaiting the gesture and the dog ACK; it turns off exactly 5 seconds
@@ -93,7 +93,7 @@ USB; synchronize again after a reset. A XIAO forwards its time to its radio mode
    cannot prolong that indication. The modem LED mirrors the XIAO status.
    The dog LED is also on for 5 seconds after a newly accepted confirmation.
 5. The dog skips **that band for two hours starting at receipt of confirmation**.
-   The band also suppresses new periodic prompts for two hours after the signed
+   The band also suppresses new periodic prompts for two hours after the authenticated
    ACK arrives. While awaiting ACK it suppresses new prompts for at most 30 seconds. Other bands remain eligible throughout. At expiry the next scheduled
    turn starts a fresh challenge.
 6. The band retries its confirmation every 2 seconds for at most 30 seconds
@@ -127,22 +127,60 @@ No robot movement or web-console integration is added by this standalone build.
 
 ## Protocol and validation
 
-Periodic packets are 32 bytes: TYPE(1), VERSION(1), NONCE(4), SLOT16(2), HMAC8(8),
-DOG_ID(8), BAND_ID(8). Types 6/7/8/9 are request/radio reply/human confirmation/dog ACK.
-HMAC-SHA256 truncated to 8 bytes covers TYPE, NONCE, full slot and **both IDs**.
-Legacy types 1–5 are unchanged. The IDs and contents are authenticated, **not encrypted**.
-USB/BLE `#P` is refused for paired periodic requests: use the physical gesture.
-The fixed gesture is an intent check, not a secret or a replacement for pair-key
-authentication. General BLE control authorization remains a separate change. Pair keys are compiled
-into firmware; secure storage against physical extraction is not implemented.
+Periodic wire **version 2** uses AES-128-CCM with an 8-byte authentication tag.
+Packets remain 32 bytes: TYPE(1), VERSION(1), COUNTER(4), SLOT16(2), TAG(8),
+ENCRYPTED_IDS(16). Types 6/7/8/9 are request/radio reply/human confirmation/dog ACK.
+The dog and band IDs are encrypted; the clear 8-byte header is authenticated as
+associated data. Type, counter, time-slot fragment and traffic timing remain visible.
+Encryption does not hide radio presence, prevent jamming or prove physical distance.
 
-Host tests cover two distinct pairs, routing, tampered IDs, wrong keys and nonces,
-lost confirmations, retries without repeated cues, the exact two-hour boundary,
-independent cooldowns, expired button windows, interval changes and timer rollover.
-Provisioning tests check distinct private keys, permissions and no overwrites.
-Real radio interoperability, full board build size and 100 m range still need
-hardware/toolchain validation. The AVR nonce source remains a prototype entropy
-pool, not a hardware CSPRNG.
+A per-pair AES key is the first 16 bytes of HMAC-SHA256(pair key,
+`RESCUE-CCM-v2` || dog ID || band ID), using big-endian 64-bit IDs. The 13-byte CCM
+nonce is type || counter32 || full hour-slot32 || `52 42 02 00`; integers are
+big-endian. Message types separate the two transmission directions. Retries reuse
+exactly the same authenticated content, counter and slot, so ciphertext is identical.
+Paired devices reject periodic version 1 and legacy plaintext radio challenges;
+there is no automatic downgrade. Legacy types 1–5 remain for unpaired demo builds.
+USB/BLE `#P` is refused for paired periodic requests: use the physical gesture.
+
+### Persistent nonce counter
+
+The dog owns **EEPROM bytes 0–31** for a two-slot journal. It reserves blocks of
+256 counters before transmission and skips unused reserved counters on restart.
+Only a fresh exchange consumes a counter; retransmissions reuse the original.
+Failed storage checks or exhaustion block broadcasts (`counter=BLOCKED`). Erased
+EEPROM initializes once; corrupt non-erased storage fails closed. `#F`, clock sync
+and cooldown reset do not reset the counter. This is a uniqueness counter, not a
+random-number generator. The journal tolerates interrupted writes; it is not
+physical tamper protection.
+
+**Do not erase, restore an old backup of, or clone dog EEPROM while retaining
+its pair keys.** Reprovision affected pairs with new random keys before reuse if
+EEPROM was erased/restored or a dog was cloned/replaced. Keep only one active dog
+for each provisioned identity/key set. Normal flashing must preserve EEPROM.
+Pair keys are compiled into firmware; physical key extraction, authenticated BLE
+control and persistent replay state on the wristband are separate limitations.
+The fixed gesture checks intent; it is not a secret password.
+
+### Upgrade existing paired devices
+
+Reflash **dog and XIAO together**, copying their existing private headers before
+each build. The wristband Feather modem transports opaque 32-byte packets and
+needs no encryption-specific update. Existing pair keys can stay because the AES
+key uses a separate derivation context. Do not regenerate private headers just
+for this update, and preserve dog EEPROM. Sync clocks again after flashing.
+A mixed old/new pair will not complete check-in.
+
+Host tests compare the production CCM implementation with RFC 3610 vector 1 and
+Python cryptography AESCCM, including altered ciphertext/header/tag and wrong keys.
+Tests also cover interrupted EEPROM writes, restart allocation, routing, gesture,
+ACK retries and independent cooldowns. A manual AVR build using GCC 14.2,
+Arduino AVR core 1.8.6 and the Adafruit Feather variant fits the RFM9x target
+(23,674 bytes Flash; 1,048 bytes static SRAM with one test pair; 24,304 bytes
+Flash and 1,145 bytes static SRAM with four test pairs). Heap and stack
+need additional SRAM. This is not the pinned PlatformIO toolchain; the PlatformIO
+registry is blocked in the development environment. New encrypted firmware still
+needs end-to-end testing on the actual dog and wristband; 100 m is not validated.
 
 ## Updating to the gesture and ACK version
 
