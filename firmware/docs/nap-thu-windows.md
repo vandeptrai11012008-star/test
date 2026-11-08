@@ -22,7 +22,7 @@ git clone https://github.com/vandeptrai11012008-star/test.git
 cd test
 python -m venv .venv
 .venv\Scripts\activate.bat
-python -m pip install platformio==6.1.18 pyserial==3.5
+python -m pip install platformio==6.1.18 pyserial==3.5 uv
 ```
 
 Nếu đã có clone, lưu thay đổi của bạn rồi chạy `git pull --ff-only origin main`
@@ -59,8 +59,16 @@ Gõ `#I` rồi Enter. Ghi lại ID trong dòng:
 Đây chỉ là ví dụ. Dùng **ID thật của XIAO của bạn**, đủ 16 ký tự hex, không lấy
 các chữ số trong tên Bluetooth. Nhấn Ctrl+C để đóng monitor. Nếu không nạp được,
 đưa XIAO vào bootloader bằng nút BOOT/RESET theo hướng dẫn board; kiểm tra lại COM
-vì cổng bootloader có thể khác. Cấu hình XIAO dùng công cụ esptool riêng qua `uvx`;
-nếu máy báo thiếu `uvx`, cài `uv` bằng `python -m pip install uv` rồi thử lại.
+vì cổng bootloader có thể khác. Cấu hình XIAO chạy esptool qua module Python 3.12 bằng `uv`, tránh lỗi chạy
+trực tiếp file `.py` trên Windows. Nếu báo thiếu `uv`, thêm `.venv\Scripts`
+vào PATH của terminal PowerShell:
+
+```powershell
+$env:Path = "$(Resolve-Path .\.venv\Scripts);$env:Path"
+```
+
+Nếu báo `Failed to spawn: esptool.py`, cập nhật code bằng `git pull --ff-only origin main`
+để lấy lệnh nạp mới. Lệnh nạp sử dụng cổng được truyền qua `--upload-port`.
 
 ## 3. Tạo khóa ghép cặp
 
