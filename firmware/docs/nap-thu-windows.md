@@ -212,3 +212,13 @@ Cần nạp lại **dog, XIAO và Feather radio trên vòng** với các file kh
 `dog_feather_periodic_rfm9x`; XIAO dùng `band_xiao_feather`; modem vòng RFM69 dùng
 `feather_radio`. Vòng mới chờ ACK từ dog nên không hiện đèn thành công nếu dog
 vẫn chạy bản cũ. `#P` qua USB/BLE không thay được thao tác vật lý cho yêu cầu định kỳ.
+
+### Đèn module vẫn sáng sau khi thả nút
+
+Trên monitor **XIAO**, gửi `#?` để đọc `led_pin`, `button_raw` và `pressed_level`.
+Trên XIAO ESP32-S3, D1 tương ứng GPIO 2. Gửi `#E` (E viết hoa), không bấm nút:
+firmware giữ chân đèn LOW 5 giây, rồi HIGH 5 giây, và in trạng thái tương ứng.
+Phép thử tạm dừng xử lý vòng trong 10 giây, không phát gói radio. Ghi lại đèn ở
+cả hai mức. Chưa tự đảo mức LED nếu đèn không đổi theo hai mức này; cần kiểm tra
+chân SIG1, nguồn/GND và module. Sau `#LED_TEST done`, logic thường tiếp tục nên
+đèn có thể đổi lại theo trạng thái nút.

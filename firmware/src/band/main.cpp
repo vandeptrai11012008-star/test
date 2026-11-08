@@ -379,6 +379,23 @@ void command(const char* line) {
   } else if (line[1] == 'L') {
     led(true); delay(1000); led(false);
     Out.println("#TEST led done");
+  } else if (line[1] == 'E') {
+    if (PIN_BUTTON_LED == NO_PIN) {
+      Out.println("#LED_TEST disabled: no button LED pin configured");
+      return;
+    }
+    // Bench test: isolate the module LED from gesture/ACK logic for 10 seconds.
+    pinMode(PIN_BUTTON_LED, OUTPUT);
+    digitalWrite(PIN_BUTTON_LED, LOW);
+    Out.printf("#LED_TEST pin=%d LOW 5s button_raw=%d\n", PIN_BUTTON_LED, digitalRead(PIN_BUTTON));
+    Serial.flush();
+    delay(5000);
+    digitalWrite(PIN_BUTTON_LED, HIGH);
+    Out.printf("#LED_TEST pin=%d HIGH 5s button_raw=%d\n", PIN_BUTTON_LED, digitalRead(PIN_BUTTON));
+    Serial.flush();
+    delay(5000);
+    led(false);
+    Out.println("#LED_TEST done");
   } else if (line[1] == 'B') {
     chirp(300);
     Out.printf("#TEST buzzer done (pin %d)\n", PIN_BUZZER);
@@ -499,7 +516,8 @@ void command(const char* line) {
     Out.printf("#PAIR_ID %08lX%08lX paired=%d\n", (unsigned long)(pairing_id >> 32),
                (unsigned long)pairing_id, periodic_band ? 1 : 0);
   } else if (line[1] == '?') {
-    Out.printf("#OK band radio=%s\n", radio_ok ? "ok" : "missing");
+    Out.printf("#OK band radio=%s led_pin=%d button_raw=%d pressed_level=%d\n",
+               radio_ok ? "ok" : "missing", PIN_BUTTON_LED, digitalRead(PIN_BUTTON), button_pressed_level);
   }
 }
 
