@@ -81,6 +81,23 @@ def test_clear_wait_does_not_change_either_side_if_firmware_is_old(monkeypatch):
         clock.clear_wait([("dog", "COM9", "dog")])
 
 
+def test_pause_is_sent_before_clock_sync_and_clear_wait(monkeypatch):
+    clock = load_script()
+    calls = []
+    class Port:
+        def write(self, raw): calls.append(raw)
+        def flush(self): pass
+        def close(self): pass
+    monkeypatch.setattr(sys, "argv", ["set_clocks.py", "--port", "COM9", "--port", "COM8", "--auto", "0", "--clear-wait"])
+    monkeypatch.setattr(clock, "find_boards", lambda ports: [("dog", "COM9", Port()), ("band", "COM8", Port())])
+    monkeypatch.setattr(clock, "send_clocks", lambda boards: calls.append("clocks"))
+    monkeypatch.setattr(clock, "clear_wait", lambda boards: calls.append("clear"))
+    monkeypatch.setattr(clock, "status_line", lambda *a: ["#OK ready"])
+    monkeypatch.setattr(clock.time, "sleep", lambda _: None)
+    clock.main()
+    assert calls == [b"#A 0\n", "clocks", "clear"]
+
+
 def test_missing_requested_dog_reports_incomplete_sync(monkeypatch):
     clock = load_script()
     closed = []

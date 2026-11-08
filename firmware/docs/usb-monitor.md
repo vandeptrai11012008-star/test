@@ -70,3 +70,26 @@ Vòng không nhận `#F` qua BLE. Lệnh `#A 2` và các lần đồng bộ gi�
 không xóa bộ chờ. Nếu firmware cũ hoặc một cổng bị thiếu, công cụ báo lỗi thay vì
 âm thầm coi đã xóa thành công. Đây là công cụ thử nghiệm, không bắt buộc dùng
 trong các lượt xác nhận bình thường.
+
+## Xem màn hình từ lúc chưa gửi yêu cầu của lượt thử mới
+
+Đóng chương trình màn hình/monitor bằng Ctrl+C. Với dog COM9 và XIAO COM8,
+đặt giờ, tạm dừng phát và xóa lượt cũ:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\set_clocks.py --port COM9 --port COM8 --auto 0 --clear-wait
+```
+
+Mở màn hình trước:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\checkin_monitor.py --port COM9
+```
+
+Màn hình hiện **Broadcasts: PAUSED** và **Ready · broadcasting paused**.
+Giữ XIAO và modem vòng có nguồn. Nhấn RESET **chỉ trên Feather dog** để mô phỏng
+bật nguồn robot: chu kỳ mặc định trở lại 2 giây, chương trình tự nối USB và đặt
+lại giờ dog. Khi sẵn sàng, dog tự phát và màn hình theo dõi lượt mới từ đầu.
+Nếu Windows đổi cổng khi reset, chọn lại cổng dog. Đây là cách dàn dựng lượt thử;
+không cần tạm dừng/xóa chờ ở mỗi lượt sử dụng bình thường. Lệnh `--auto 0`
+được gửi trước khi đặt giờ/xóa chờ để không tự bật phát trong lúc chuẩn bị.

@@ -108,6 +108,13 @@ def main():
         for _, _, port in boards:
             port.close()
         sys.exit("cannot clear wait; no board identified on: " + ", ".join(missing))
+    # For a staged demo, stop transmission before setting clocks or clearing waits.
+    if args.auto == 0:
+        for kind, _, port in boards:
+            if kind == "dog":
+                port.write(b"#A 0\n")
+                port.flush()
+                time.sleep(0.3)
     send_clocks(boards)
     if args.clear_wait:
         try:
@@ -117,7 +124,7 @@ def main():
                 port.close()
             sys.exit(str(exc))
     for kind, dev, p in boards:
-        if kind == "dog" and args.auto is not None:
+        if kind == "dog" and args.auto is not None and args.auto != 0:
             p.write(("#A %d\n" % args.auto).encode())
             p.flush()
             time.sleep(0.3)

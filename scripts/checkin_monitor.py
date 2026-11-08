@@ -26,6 +26,7 @@ class Telemetry:
         self.connected = False
         self.error = "USB not connected"
         self.radio = self.device_clock = None
+        self.interval = None
         self.peers = {}
         self.logs = deque(maxlen=100)
 
@@ -34,6 +35,7 @@ class Telemetry:
             self.connected, self.error = connected, error
             if not connected:
                 self.radio = self.device_clock = None
+                self.interval = None
 
     def line(self, line):
         line = line.strip()[:512]
@@ -46,6 +48,9 @@ class Telemetry:
             if line.startswith(("#OK dog ", "#HELLO dog ")):
                 self.radio = fields.get("radio", self.radio)
                 self.device_clock = fields.get("clock", self.device_clock)
+                interval = fields.get("auto", "")
+                if interval.isdigit():
+                    self.interval = int(interval)
             if line == "#WAIT_CLEARED dog":
                 for peer in self.peers.values():
                     peer.update(state="WAITING", confirmed_at=None, updated=now)
@@ -80,7 +85,8 @@ class Telemetry:
                 peers.append(dict(peer, age_seconds=int(age), stale=not self.connected or age > 10,
                                   remaining_seconds=remaining))
             return {"connected": self.connected, "error": self.error, "radio": self.radio,
-                    "clock": self.device_clock, "peers": peers, "logs": list(self.logs)}
+                    "clock": self.device_clock, "interval_seconds": self.interval,
+                    "peers": peers, "logs": list(self.logs)}
 
 
 def watch_serial(port, state, stop, sync_clock=True):

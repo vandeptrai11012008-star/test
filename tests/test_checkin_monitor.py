@@ -73,14 +73,15 @@ def test_viewer_serves_actual_state_and_rejects_commands():
         thread.join()
 
 
-def test_usb_watcher_sets_missing_clock_without_confirming_or_resetting(monkeypatch):
+@pytest.mark.parametrize("interval", [0, 2])
+def test_usb_watcher_sets_missing_clock_without_confirming_or_resetting(monkeypatch, interval):
     import serial
     monitor = load_monitor()
     stop = threading.Event()
     state = monitor.Telemetry()
     sent = []
-    replies = iter((b"#OK dog radio=ok clock=NOT-set auto=2 paired=1\n",
-                    b"#OK dog radio=ok clock=set auto=2 paired=1\n"))
+    replies = iter((("#OK dog radio=ok clock=NOT-set auto=%d paired=1\n" % interval).encode(),
+                    ("#OK dog radio=ok clock=set auto=%d paired=1\n" % interval).encode()))
     class FakeSerial:
         def __enter__(self): return self
         def __exit__(self, *args): return False
@@ -95,3 +96,4 @@ def test_usb_watcher_sets_missing_clock_without_confirming_or_resetting(monkeypa
     assert any(raw.startswith(b"#T ") for raw in sent)
     assert all(raw == b"#?\n" or raw.startswith(b"#T ") for raw in sent)
     assert state.snapshot()["clock"] == "set"
+    assert state.snapshot()["interval_seconds"] == interval
