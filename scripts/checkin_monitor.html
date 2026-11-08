@@ -9,7 +9,6 @@
 <div class="box scroll"><table><thead><tr><th>Wristband ID</th><th>Status reported by dog</th><th>Next check-in</th></tr></thead><tbody id="peers"></tbody></table><p id="empty">No wristband data yet. Check power, the USB cable and pairing configuration.</p></div>
 <p>Confirmation on the dog does not prove the wristband received the ACK. The two-hour wait does not confirm that the wearer is still nearby. Stale data is marked.</p>
 <details class="box"><summary>USB log</summary><pre id="logs"></pre></details>
-<p>Synchronize the wristband clock once and keep it powered. If the wristband loses power, stop this app with Ctrl+C, synchronize the dog and XIAO again, then reopen it. Do not open Serial Monitor on the same port at the same time.</p>
 </main>
 <script>
 const $=id=>document.getElementById(id);
