@@ -114,6 +114,18 @@ int main() {
   CHECK(!no_ack.status_led(30100));
   rescue::make_beacon(key,rescue::BEACON,next,slot,dog_id,band_a,chal);
   CHECK(no_ack.on_packet(chal,32,slot,30101,reply,bits) == rescue::PeriodicBand::PROMPT);
+  // USB clear-wait cancels both cooldowns and pending receipts, preserving pairing.
+  a.clear_wait(); wrist_a.clear_wait();
+  CHECK(!a.cooling(7206010)); CHECK(!wrist_a.cooling(7206010));
+  CHECK(a.due(7206010)); CHECK(!wrist_a.status_led(7206010));
+  CHECK(!a.receive(alive,32,7206010,slot));
+  CHECK(!wrist_a.retry_confirmation(7206010,retry));
+  CHECK(wrist_a.on_packet(first_ack,32,slot,7206010,reply,bits) == rescue::PeriodicBand::SILENT);
+  uint8_t reset_nonce[4] = {9,8,7,6};
+  CHECK(a.challenge(7206011,slot+2,reset_nonce,chal));
+  CHECK(wrist_a.on_packet(chal,32,slot+2,7206012,reply,bits) == rescue::PeriodicBand::PROMPT);
+  CHECK(a.receive(reply,32,7206013,slot+2));
+  CHECK(!wrist_b.on_packet(chal,32,slot+2,7206013,bad,bits));
   rescue::PeriodicDog unpaired(key,0,band_a);
   CHECK(!unpaired.due(0));
   puts(fails ? "periodic dog: FAILED" : "periodic dog: ok");

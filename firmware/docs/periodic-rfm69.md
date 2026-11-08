@@ -153,3 +153,13 @@ show the five-second success indication. Power/charge LEDs or LEDs hardwired to
 3.3 V are not firmware-controlled and can remain lit. This feature controls the
 configured user/status LEDs only. Periodic prompts use a short nonblocking
 buzzer/motor cue, not a boot light or repeated LED blinking.
+
+## USB laptop viewer and bench reset
+
+See [USB monitoring and automatic-start limitations](usb-monitor.md).
+`checkin_monitor.py --port COM9` reads telemetry and automatically sets an unset
+dog clock. It never clears cooldowns, confirms a wearer or moves the robot.
+Firmware defaults to periodic sending after clock/pairing/radio readiness.
+USB `#F` clears only local cooldown/pending state, retaining IDs, keys and replay
+cache; clear both sides using `set_clocks.py --clear-wait`. Both roles advertise
+`clear_wait=1` when available. The band refuses this reset through BLE.

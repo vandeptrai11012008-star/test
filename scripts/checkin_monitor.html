@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Theo dõi dog và wristband</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif}body{margin:0;background:#101916;color:#e4eee8}main{max-width:1000px;margin:auto;padding:24px}h1{font-size:26px;margin-bottom:8px}p{color:#b0c2b7;line-height:1.6}.box{border:1px solid #395348;border-radius:10px;padding:16px;margin:18px 0;background:#17241e}#connection{font-weight:700}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px 8px;border-bottom:1px solid #395348}th{color:#b0c2b7;font-size:13px}.stale{opacity:.55}.ok{color:#71e2aa}.warn{color:#f4cb75}pre{max-height:280px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}code{overflow-wrap:anywhere}#error{color:#ffb1a8}.scroll{overflow-x:auto}@media(max-width:600px){main{padding:14px}h1{font-size:22px}td,th{padding:10px 5px;font-size:12px}}
+</style>
+<main><h1>Dog · Wristband</h1><p>Robot và vòng tự trao đổi. Laptop hiển thị trạng thái qua USB và tự đặt giờ cho dog khi cần.</p>
+<div class="box" role="status" aria-live="polite"><div id="connection">Đang chờ dữ liệu…</div><div id="readiness"></div><div id="error"></div></div>
+<div class="box scroll"><table><thead><tr><th>ID vòng</th><th>Trạng thái dog ghi nhận</th><th>Chờ hỏi lại</th></tr></thead><tbody id="peers"></tbody></table><p id="empty">Chưa có dữ liệu vòng. Kiểm tra nguồn, cáp USB và cấu hình ghép cặp.</p></div>
+<p>Xác nhận trên dog chưa chứng minh đèn trên vòng đã nhận ACK. Trạng thái chờ 2 giờ không phải xác nhận người đeo còn ở gần. Dữ liệu cũ sẽ được đánh dấu.</p>
+<details class="box"><summary>Nhật ký USB</summary><pre id="logs"></pre></details>
+<p>Vòng cần được đồng bộ giờ một lần và giữ nguồn. Nếu vòng mất nguồn, đóng chương trình bằng Ctrl+C, đồng bộ lại dog và XIAO rồi mở lại. Không mở đồng thời Serial Monitor trên cùng cổng.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const labels={WAITING:'Đang chờ phản hồi',BAND_SEEN_WAIT_BUTTON:'Đã thấy vòng · chờ thao tác nút',CONFIRMED_WAIT_2H:'Đã xác nhận · chờ hỏi lại'};
+function cell(row,text){const td=document.createElement('td');td.textContent=text;row.appendChild(td);return td}
+async function refresh(){try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)throw Error('Không đọc được dữ liệu');const s=await r.json();$('connection').textContent=s.connected?'Đã mở cổng USB':'Mất kết nối USB';$('connection').className=s.connected?'ok':'warn';$('error').textContent=s.error||'';$('readiness').textContent='Radio: '+(s.radio||'chưa rõ')+' · Đồng hồ: '+(s.clock==='set'?'đã đặt':s.clock==='NOT-set'?'CHƯA ĐỒNG BỘ':'chưa rõ');$('peers').replaceChildren();$('empty').hidden=s.peers.length>0;for(const p of s.peers){const tr=document.createElement('tr');if(p.stale)tr.className='stale';cell(tr,p.id);cell(tr,(labels[p.state]||p.state)+(p.stale?' · dữ liệu cũ':''));const n=p.remaining_seconds;cell(tr,p.state!=='CONFIRMED_WAIT_2H'?'—':n===null?'Chưa biết thời điểm bắt đầu':Math.floor(n/3600)+'h '+Math.floor(n%3600/60)+'m '+n%60+'s');$('peers').appendChild(tr)}$('logs').textContent=s.logs.join('\n')}catch(e){$('error').textContent='Không kết nối được chương trình theo dõi trên laptop.'}}
+refresh();setInterval(refresh,1000);
+</script></html>

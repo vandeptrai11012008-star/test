@@ -234,3 +234,10 @@ không cắt nguồn VCC. Nếu module cấp 5V vẫn còn sáng mờ ở mức 
 logic thời gian không bảo đảm ngắt hoàn toàn dòng qua LED. Cần đối chiếu mạch
 và mức điện áp của module trước khi chọn giải pháp phần cứng; không tăng GPIO
 XIAO lên 5V. Bản đổi logic này chỉ cần nạp lại XIAO với khóa riêng cũ.
+
+### Màn hình USB và lệnh xóa chờ
+
+Xem [hướng dẫn chạy tự động, màn hình laptop và xóa chờ](usb-monitor.md).
+Lệnh xóa cả hai bên: `python scripts/set_clocks.py --port COM9 --port COM8 --auto 2 --clear-wait`.
+Cần nạp bản có hỗ trợ `#F` cho dog và XIAO trước. Màn hình laptop:
+`python scripts/checkin_monitor.py --port COM9`. Không mở hai chương trình cùng cổng.

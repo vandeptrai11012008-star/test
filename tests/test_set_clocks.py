@@ -54,6 +54,33 @@ def test_busy_port_and_unresponsive_board_have_distinct_diagnostics(monkeypatch,
     assert closed == ["COM8"]
 
 
+def test_clear_wait_preflights_support_then_clears_band_before_dog(monkeypatch):
+    clock = load_script()
+    calls = []
+    def ask(port, command, wait):
+        calls.append((port, command))
+        if command == "#?":
+            return "#OK %s radio=ok clear_wait=1" % port
+        return "#WAIT_CLEARED " + port
+    monkeypatch.setattr(clock, "ask", ask)
+    clock.clear_wait([("dog", "COM9", "dog"), ("band", "COM8", "band")])
+    assert calls == [("dog", "#?"), ("band", "#?"), ("band", "#F"), ("dog", "#F")]
+
+
+def test_clear_wait_does_not_change_either_side_if_firmware_is_old(monkeypatch):
+    clock = load_script()
+    calls = []
+    def ask(port, command, wait):
+        calls.append(command)
+        return "#OK %s radio=ok%s" % (port, " clear_wait=1" if port == "dog" else "")
+    monkeypatch.setattr(clock, "ask", ask)
+    with pytest.raises(RuntimeError, match="update its firmware"):
+        clock.clear_wait([("dog", "COM9", "dog"), ("band", "COM8", "band")])
+    assert "#F" not in calls
+    with pytest.raises(RuntimeError, match="both dog and wristband"):
+        clock.clear_wait([("dog", "COM9", "dog")])
+
+
 def test_missing_requested_dog_reports_incomplete_sync(monkeypatch):
     clock = load_script()
     closed = []

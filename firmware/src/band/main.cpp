@@ -365,7 +365,7 @@ uint8_t reg(uint8_t addr) {  // read one radio register directly (debug only)
 extern int button_pressed_level;
 extern bool was_down;
 
-void command(const char* line) {
+void command(const char* line, bool local_usb = true) {
   if (line[1] == 'T') {
     double t = atof(line + 2);  // seconds, with milliseconds: the hop schedule needs them
     struct timeval tv = {(time_t)t, (suseconds_t)((t - (double)(time_t)t) * 1e6)};
@@ -518,12 +518,18 @@ void command(const char* line) {
     for (int i = 0; i < n; i++) Out.printf(" %02X", got[i]);
     Out.println();
 #endif
+  } else if (strcmp(line, "#F") == 0) {
+    if (!local_usb || !periodic_band) { Out.println("#ERR clear-wait requires paired band USB"); return; }
+    periodic_band->clear_wait();
+    checkin_button.arm(digitalRead(PIN_BUTTON) == button_pressed_level);
+    cue_active = false; buzz(false); out(PIN_MOTOR, false); led(false);
+    Out.println("#WAIT_CLEARED band");
   } else if (line[1] == 'I') {
     Out.printf("#PAIR_ID %08lX%08lX paired=%d\n", (unsigned long)(pairing_id >> 32),
                (unsigned long)pairing_id, periodic_band ? 1 : 0);
   } else if (line[1] == '?') {
-    Out.printf("#OK band radio=%s led_pin=%d button_raw=%d pressed_level=%d\n",
-               radio_ok ? "ok" : "missing", PIN_BUTTON_LED, digitalRead(PIN_BUTTON), button_pressed_level);
+    Out.printf("#OK band radio=%s led_pin=%d button_raw=%d pressed_level=%d clear_wait=%d\n",
+               radio_ok ? "ok" : "missing", PIN_BUTTON_LED, digitalRead(PIN_BUTTON), button_pressed_level, periodic_band ? 1 : 0);
   }
 }
 
@@ -646,7 +652,7 @@ void loop() {
   while (xQueueReceive(ble_in, &ch, 0) == pdTRUE) {
     auto ev = ble_parser.feed((uint8_t)ch);
     if (ev == rescue::FrameParser::PACKET) handle(ble_parser.packet(), USB_LINK);
-    else if (ev == rescue::FrameParser::LINE) command(ble_parser.line());
+    else if (ev == rescue::FrameParser::LINE) command(ble_parser.line(), false);
   }
   if (ble_connected && !ble_out.empty()) {      // notify in 20-byte chunks (works at any MTU)
     std::string chunk;

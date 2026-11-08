@@ -64,6 +64,10 @@ class PeriodicBand {
            (awaiting_ack_ && (uint32_t)(now - confirmed_at_) < CHECKIN_RESPONSE_MS) ||
            success_led(now);
   }
+  // Local bench reset only. Retain identities, pair key and replay cache.
+  void clear_wait() {
+    pending_ = confirmed_ = awaiting_ack_ = acknowledged_ = false;
+  }
   Event on_packet(const uint8_t* raw, size_t len, uint32_t slot, uint32_t now,
                  uint8_t reply[PACKET_LEN], uint8_t bits[3]) {
     uint32_t matched;

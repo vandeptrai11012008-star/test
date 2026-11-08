@@ -23,6 +23,7 @@ class PeriodicDog {
     return true;
   }
   void clear() { active_ = sent_ = false; state_ = WAITING; }
+  void clear_wait() { confirmed_ = false; confirmed_at_ = 0; clear(); }
   uint16_t period() const { return period_ms_ / 1000; }
   uint64_t band_id() const { return band_; }
   bool cooling(uint32_t now) const {

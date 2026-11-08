@@ -73,11 +73,30 @@ def status_line(kind, port):
     return [l for l in lines if l.startswith(("#OK", "#TEST"))]
 
 
+def clear_wait(boards):
+    """Verify both firmware roles support USB reset before changing either side."""
+    targets = [(kind, dev, port) for kind, dev, port in boards if kind in ("band", "dog")]
+    if {kind for kind, _, _ in targets} != {"band", "dog"}:
+        raise RuntimeError("--clear-wait needs both dog and wristband XIAO connected over USB")
+    for kind, dev, port in targets:
+        reply = ask(port, "#?", 1.2)
+        if not any(line.startswith("#OK " + kind + " ") and "clear_wait=1" in line.split()
+                   for line in reply.splitlines()):
+            raise RuntimeError("%s does not advertise clear-wait support; update its firmware first" % dev)
+    # Band first: make it ready before the dog starts a new challenge.
+    for kind, dev, port in sorted(targets, key=lambda item: item[0]):
+        expected = "#WAIT_CLEARED " + kind
+        if expected not in ask(port, "#F", 1.2).splitlines():
+            raise RuntimeError("%s did not acknowledge #F; reset may be incomplete" % dev)
+        print("%s %s" % (dev, expected))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--auto", type=int, metavar="SECONDS",
                     help="dog interval in seconds, 0 stops; RFM69 beacon defaults to 2, RFM9x near checks to off")
     ap.add_argument("--port", action="append", help="only use this USB port; repeat for dog and XIAOs (e.g. COM5)")
+    ap.add_argument("--clear-wait", action="store_true", help="clear both sides' two-hour wait over USB without changing pair keys")
     args = ap.parse_args()
     if args.auto is not None and not 0 <= args.auto <= 3600:
         ap.error("--auto must be between 0 and 3600 seconds")
@@ -85,7 +104,18 @@ def main():
     if not boards:
         sys.exit("no rescue boards answered on USB")
     missing = sorted(set(args.port or []) - {dev for _, dev, _ in boards})
+    if args.clear_wait and missing:
+        for _, _, port in boards:
+            port.close()
+        sys.exit("cannot clear wait; no board identified on: " + ", ".join(missing))
     send_clocks(boards)
+    if args.clear_wait:
+        try:
+            clear_wait(boards)
+        except (RuntimeError, OSError, serial.SerialException) as exc:
+            for _, _, port in boards:
+                port.close()
+            sys.exit(str(exc))
     for kind, dev, p in boards:
         if kind == "dog" and args.auto is not None:
             p.write(("#A %d\n" % args.auto).encode())

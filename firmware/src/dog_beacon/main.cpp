@@ -53,7 +53,8 @@ void status() {
   Serial.print(F(" code=")); Serial.print(radio_code);
   Serial.print(F(" clock=")); Serial.print(clock_ok ? F("set") : F("NOT-set"));
   Serial.print(F(" auto=")); Serial.print(period_seconds);
-  Serial.print(F(" paired=")); Serial.println(pairing_ok ? peer_count : 0);
+  Serial.print(F(" paired=")); Serial.print(pairing_ok ? peer_count : 0);
+  Serial.println(F(" clear_wait=1"));
   for (uint8_t i = 0; pairing_ok && i < peer_count; ++i) {
     Serial.print(F("#PEER band=")); print_id(peers[i].id);
     Serial.print(F(" state="));
@@ -95,6 +96,11 @@ void command(const char* line) {
     for (uint8_t i = 0; pairing_ok && i < peer_count; ++i) beacons[i]->set_period(period_seconds);
     have_tx = false;
     status();
+  } else if (strcmp(line, "#F") == 0) {
+    for (uint8_t i = 0; pairing_ok && i < peer_count; ++i) beacons[i]->clear_wait();
+    have_confirmation = false; have_tx = false;
+    digitalWrite(13, LOW);
+    Serial.println(F("#WAIT_CLEARED dog"));
   } else if (line[1] == '?') status();
 }
 
