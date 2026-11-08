@@ -1,4 +1,6 @@
 import importlib.util
+import sys
+import pytest
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,3 +26,42 @@ def test_windows_ports_are_discovered_and_explicit_ports_limit_access(monkeypatc
     opened.clear()
     assert [dev for _, dev, _ in clock.find_boards(["COM8", "COM8"])] == ["COM8"]
     assert opened == ["COM8"]
+
+
+def test_native_usb_board_is_identified_after_delayed_reply(monkeypatch):
+    clock = load_script()
+    replies = iter(("", "", "#OK dog radio=ok code=0"))
+    monkeypatch.setattr(clock.serial, "Serial", lambda *a, **k: SimpleNamespace(close=lambda: None))
+    monkeypatch.setattr(clock.time, "sleep", lambda _: None)
+    monkeypatch.setattr(clock, "ask", lambda *a: next(replies))
+    assert [(kind, dev) for kind, dev, _ in clock.find_boards(["COM9"])] == [("dog", "COM9")]
+
+
+def test_busy_port_and_unresponsive_board_have_distinct_diagnostics(monkeypatch, capsys):
+    clock = load_script()
+    closed = []
+    def connect(device, *a, **k):
+        if device == "COM9":
+            raise PermissionError("access denied")
+        return SimpleNamespace(close=lambda: closed.append(device))
+    monkeypatch.setattr(clock.serial, "Serial", connect)
+    monkeypatch.setattr(clock.time, "sleep", lambda _: None)
+    monkeypatch.setattr(clock, "ask", lambda *a: "")
+    assert clock.find_boards(["COM8", "COM9"]) == []
+    diagnostics = capsys.readouterr().err
+    assert "COM9 OPEN_FAILED" in diagnostics
+    assert "COM8 NO_REPLY" in diagnostics
+    assert closed == ["COM8"]
+
+
+def test_missing_requested_dog_reports_incomplete_sync(monkeypatch):
+    clock = load_script()
+    closed = []
+    port = SimpleNamespace(close=lambda: closed.append("COM8"))
+    monkeypatch.setattr(sys, "argv", ["set_clocks.py", "--port", "COM8", "--port", "COM9"])
+    monkeypatch.setattr(clock, "find_boards", lambda ports: [("band", "COM8", port)])
+    monkeypatch.setattr(clock, "send_clocks", lambda boards: None)
+    monkeypatch.setattr(clock, "status_line", lambda *a: ["#OK feather radio=ok clock=set"])
+    with pytest.raises(SystemExit, match="incomplete clock sync.*COM9"):
+        clock.main()
+    assert closed == ["COM8"]

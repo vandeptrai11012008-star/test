@@ -35,11 +35,23 @@ def find_boards(ports=None):
     for dev in sorted(set(devices)):
         try:
             p = serial.Serial(dev, 115200, timeout=0.1)
-        except (OSError, serial.SerialException):
+        except (OSError, serial.SerialException) as exc:
+            print("WARN %s OPEN_FAILED: %s (close any Serial Monitor using this port)" % (dev, exc), file=sys.stderr)
             continue
         time.sleep(0.4)
-        reply = ask(p, "#?", 1.2)
-        kind = next((k for k in ("band", "dog", "dongle") if "#OK " + k in reply), None)
+        kind = None
+        try:
+            for attempt in range(3):
+                reply = ask(p, "#?", 1.2)
+                kind = next((k for k in ("band", "dog", "dongle") if "#OK " + k in reply), None)
+                if kind:
+                    break
+                if attempt < 2:
+                    time.sleep(0.6)  # opening native USB can reset/re-enumerate a board
+            if not kind:
+                print("WARN %s NO_REPLY: no #OK band/dog/dongle after 3 requests" % dev, file=sys.stderr)
+        except (OSError, serial.SerialException) as exc:
+            print("WARN %s IO_FAILED: %s" % (dev, exc), file=sys.stderr)
         if kind:
             boards.append((kind, dev, p))
         else:
@@ -72,6 +84,7 @@ def main():
     boards = find_boards(args.port)
     if not boards:
         sys.exit("no rescue boards answered on USB")
+    missing = sorted(set(args.port or []) - {dev for _, dev, _ in boards})
     send_clocks(boards)
     for kind, dev, p in boards:
         if kind == "dog" and args.auto is not None:
@@ -80,6 +93,8 @@ def main():
             time.sleep(0.3)
         print("%-6s %s  %s" % (kind, dev, " | ".join(status_line(kind, p)) or "(no status)"))
         p.close()
+    if missing:
+        sys.exit("incomplete clock sync; no board identified on: " + ", ".join(missing))
 
 
 if __name__ == "__main__":
