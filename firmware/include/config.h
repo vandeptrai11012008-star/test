@@ -34,7 +34,7 @@
 #define LOW_ON_LED 1
 #define PIN_BUTTON D3        // switch to GND; pressed level is still learned at boot
 #define BUTTON_MODULE 0      // 0: internal pull-up (bare switch), 1: a module drives the pin
-#define PIN_BUTTON_LED NO_PIN  // was D1: disabled after the smoke incident (LED stayed lit = SIG1 likely on 3V3); re-enable once wiring is checked
+#define PIN_BUTTON_LED D1     // LED button module: SIG1 -> D1, SIG2 (button) -> D3
 #define PIN_BUZZER D4
 #define BUZZER_HZ 2300     // driven with a tone: this buzzer only clicks on a steady HIGH
 // A bare coin motor pulls 60-100 mA at start, more than a GPIO pin can safely give.

@@ -201,6 +201,12 @@ khôi phục hoạt động; bản probe thay thế firmware check-in trên boar
 
 ### Bản thao tác nút và đèn mới
 
+Module nút có đèn: **SIG1 nối XIAO D1** (điều khiển LED), **SIG2 nối D3**
+(đọc nút), chung GND. Cấu hình `PIN_BUTTON_LED = D1` điều khiển đèn trên module:
+sáng khi bấm, sáng 5 giây sau ACK hợp lệ rồi tắt. Không nối SIG1 trực tiếp vào
+nguồn nếu muốn firmware điều khiển đèn. Bản thay đổi chân LED chỉ cần nạp lại XIAO,
+không tạo lại khóa hoặc nạp lại các Feather nếu đã có bản thao tác nút và ACK.
+
 Cần nạp lại **dog, XIAO và Feather radio trên vòng** với các file khóa cũ tương
 ứng, rồi đồng bộ giờ. Không tạo lại khóa. Với board dog ghi `RFM9x LoRa`, dùng
 `dog_feather_periodic_rfm9x`; XIAO dùng `band_xiao_feather`; modem vòng RFM69 dùng
