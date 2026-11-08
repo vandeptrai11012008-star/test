@@ -170,3 +170,18 @@ Thử hai radio ở gần trước, sau đó tăng khoảng cách từ từ. Kh�
 
 Log chỉ cần có dòng lỗi và ID; không gửi nội dung `secrets.h`. Chi tiết giao thức,
 phạm vi và các giới hạn nằm trong [periodic-rfm69.md](periodic-rfm69.md).
+
+### Đọc trực tiếp chip khi dog báo `code=-2`
+
+Target `feather_radio_probe` chỉ dùng USB/SPI, không dùng RadioLib, không nạp khóa
+và không phát sóng. Đóng monitor rồi nạp tạm vào **Feather dog**:
+
+```bat
+python -m platformio run -d firmware -e feather_radio_probe -t upload --upload-port COM9
+python -m platformio device monitor --port COM9 --baud 115200 --echo --filter send_on_enter --eol LF
+```
+
+Gõ `#?` rồi Enter. Gửi dòng `#SPI ...` để chẩn đoán. Với RFM69 giao tiếp được,
+`RF69_VERSION` dự kiến đọc ổn định `24 24 24` (hex). Kết quả khác chưa tự nó chứng
+minh chip hỏng. Sau phép thử cần nạp lại `dog_feather_rfm69` và đồng bộ giờ để
+khôi phục hoạt động; bản probe thay thế firmware check-in trên board đó.
