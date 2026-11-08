@@ -77,6 +77,14 @@ def test_periodic_dog_waits_for_human_and_rejects_stale_replies(tmp_path):
     assert "periodic dog: ok" in result.stdout
 
 
+def test_checkin_gesture_requires_two_clicks_then_third_hold_and_release(tmp_path):
+    exe = tmp_path / "test_checkin_button"
+    build("test/host/test_checkin_button.cpp", exe)
+    result = subprocess.run([str(exe)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "checkin button: ok" in result.stdout
+
+
 def test_fsk_hop_schedule_meets_the_channel_rules(tmp_path):
     """50+ channels inside 903-927 MHz, 250 kHz+ apart, keyed pseudorandom order, equal use,
     identical on both ends, and a clock error of a dwell lands on a neighbouring slot."""

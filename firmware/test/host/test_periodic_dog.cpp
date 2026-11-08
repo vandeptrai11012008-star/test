@@ -38,6 +38,9 @@ int main() {
   CHECK(wrist_a.on_packet(chal,32,slot,6000,retry,bits) == rescue::PeriodicBand::RETRY_CONFIRMATION);
   CHECK(!memcmp(alive,retry,32));
   CHECK(a.receive(retry,32,6000,slot));
+  uint8_t first_ack[32];
+  CHECK(a.receipt(retry,32,6001,slot,first_ack));
+  CHECK(wrist_a.on_packet(first_ack,32,slot,6001,reply,bits) == rescue::PeriodicBand::ACKNOWLEDGED);
   CHECK(a.state(31000) == rescue::PeriodicDog::CONFIRMED);
   CHECK(!a.receive(alive,32,6001,slot)); CHECK(!a.due(31000));
   CHECK(!a.due(7205999)); CHECK(a.due(7206000));
@@ -48,8 +51,8 @@ int main() {
   CHECK(b.receive(reply,32,31002,slot)); CHECK(b.due(33000));
   // A fresh request to A stays silent for exactly two hours after its button press.
   rescue::make_beacon(key,rescue::BEACON,next,slot+1,dog_id,band_a,chal);
-  CHECK(!wrist_a.on_packet(chal,32,slot+1,7204999,reply,bits));
-  CHECK(wrist_a.on_packet(chal,32,slot+1,7205000,reply,bits) == rescue::PeriodicBand::PROMPT);
+  CHECK(!wrist_a.on_packet(chal,32,slot+1,7206000,reply,bits));
+  CHECK(wrist_a.on_packet(chal,32,slot+1,7206001,reply,bits) == rescue::PeriodicBand::PROMPT);
   CHECK(a.challenge(7206000,slot+1,next,chal));
   CHECK(!a.receive(alive,32,7206001,slot+1));
   CHECK(a.set_period(0)); CHECK(!a.due(9999999));
@@ -67,6 +70,22 @@ int main() {
   CHECK(w.on_packet(chal,32,slot,0xFFFFFF00UL,reply,bits) == rescue::PeriodicBand::PROMPT);
   CHECK(!c.due(0x100)); CHECK(c.due(0x700));
   CHECK(w.press(0x800,alive)); CHECK(c.receive(alive,32,0x800,slot+1));
+  uint8_t ack[32];
+  CHECK(!w.success_led(0x800)); // TX alone is not confirmed success
+  CHECK(c.receipt(alive,32,0x801,slot+1,ack));
+  ack[31] ^= 1;
+  CHECK(w.on_packet(ack,32,slot+1,0x802,reply,bits) == rescue::PeriodicBand::SILENT);
+  ack[31] ^= 1;
+  CHECK(w.retry_confirmation(0x800 + 2000,retry)); CHECK(!memcmp(alive,retry,32));
+  CHECK(!c.receive(retry,32,0x800 + 2001,slot+1));
+  CHECK(c.receipt(retry,32,0x800 + 2001,slot+1,ack));
+  CHECK(w.on_packet(ack,32,slot+1,0x800 + 2002,reply,bits) == rescue::PeriodicBand::ACKNOWLEDGED);
+  CHECK(w.success_led(0x800 + 2002)); CHECK(w.success_led(0x800 + 7001));
+  CHECK(!w.success_led(0x800 + 7002));
+  CHECK(!w.retry_confirmation(0x800 + 4002,retry));
+  CHECK(w.on_packet(ack,32,slot+1,0x800 + 4003,reply,bits) == rescue::PeriodicBand::SILENT);
+  CHECK(!w.success_led(0x800 + 7002)); // duplicate ACK cannot prolong LED
+  CHECK(!c.receipt(alive,32,0x800 + 30000,slot+1,ack));
   CHECK(!c.due(0x800 + rescue::CHECKIN_COOLDOWN_MS - 1));
   CHECK(c.due(0x800 + rescue::CHECKIN_COOLDOWN_MS));
   rescue::PeriodicDog expired(key,dog_id,band_a);
@@ -80,6 +99,15 @@ int main() {
   CHECK(!expired_w.on_packet(chal,32,slot,30002,reply,bits));
   rescue::encode(rescue::make(key,rescue::ALIVE,next,slot),bad);
   CHECK(!expired.receive(bad,32,30002,slot));
+  // Missing ACK must not impose a two-hour local cooldown or show success.
+  rescue::PeriodicBand no_ack(key,dog_id,band_a);
+  rescue::make_beacon(key,rescue::BEACON,n,slot,dog_id,band_a,chal);
+  CHECK(no_ack.on_packet(chal,32,slot,1,reply,bits) == rescue::PeriodicBand::PROMPT);
+  CHECK(no_ack.press(100,alive)); CHECK(!no_ack.cooling(101));
+  CHECK(!no_ack.success_led(101)); CHECK(no_ack.retry_confirmation(2100,retry));
+  CHECK(!no_ack.retry_confirmation(30100,retry));
+  rescue::make_beacon(key,rescue::BEACON,next,slot,dog_id,band_a,chal);
+  CHECK(no_ack.on_packet(chal,32,slot,30101,reply,bits) == rescue::PeriodicBand::PROMPT);
   rescue::PeriodicDog unpaired(key,0,band_a);
   CHECK(!unpaired.due(0));
   puts(fails ? "periodic dog: FAILED" : "periodic dog: ok");

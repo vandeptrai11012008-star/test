@@ -121,7 +121,7 @@ void setup() {
   Serial1.print(radio_ok ? F("ok") : F("missing"));
   Serial1.print(F(" code="));
   Serial1.println(st);
-  digitalWrite(FEATHER_LED, radio_ok ? HIGH : LOW);  // lit = radio found
+  digitalWrite(FEATHER_LED, LOW);  // XIAO controls the status LED; radio readiness is in #?
 }
 
 void loop() {
@@ -134,6 +134,7 @@ void loop() {
       const char* l = parser.line();
       if (l[1] == 'T') set_clock(l + 2);
       else if (l[1] == 'B') burst_next = true;
+      else if (l[1] == 'L' && (l[2] == '0' || l[2] == '1')) digitalWrite(FEATHER_LED, l[2] == '1' ? HIGH : LOW);
       else if (l[1] == '?') status();
     }
   }

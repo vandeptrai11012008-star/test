@@ -24,7 +24,8 @@ rescue::PeriodicDog* beacons[4] = {};
 bool pairing_ok = false;
 uint16_t period_seconds = 2;
 uint32_t last_tx_ms = 0;
-bool have_tx = false;
+bool have_tx = false, have_confirmation = false;
+uint32_t last_confirmation = 0;
 uint8_t next_peer = 0;
 void print_id(uint64_t id) {
   for (int8_t i = 15; i >= 0; --i) Serial.print((uint8_t)((id >> (i * 4)) & 15), HEX);
@@ -140,18 +141,24 @@ void loop() {
     uint8_t raw[rescue::PACKET_LEN];
     int len = radio_read(raw);
     for (uint8_t i = 0; len == (int)rescue::PACKET_LEN && i < peer_count; ++i) {
-      if (!beacons[i]->receive(raw, len, millis(), now_slot())) continue;
-      bool confirmed = beacons[i]->state(millis()) == rescue::PeriodicDog::CONFIRMED;
-      Serial.print(confirmed ? F("#PERSON_CONFIRMED band=") : F("#BAND_SEEN band="));
-      print_id(peers[i].id); Serial.println(confirmed ? F(" next=2h") : F(" wait=button"));
+      uint32_t received_at = millis();
+      bool fresh = beacons[i]->receive(raw, len, received_at, now_slot());
+      uint8_t ack[rescue::PACKET_LEN];
+      bool receipt = beacons[i]->receipt(raw, len, received_at, now_slot(), ack);
+      if (!fresh && !receipt) continue;
+      if (receipt && radio_send(ack) != RADIO_OK) Serial.println(F("#ERR ack transmit"));
+      if (fresh) {
+        bool confirmed = beacons[i]->state(received_at) == rescue::PeriodicDog::CONFIRMED;
+        if (confirmed) { have_confirmation = true; last_confirmation = received_at; }
+        Serial.print(confirmed ? F("#PERSON_CONFIRMED band=") : F("#BAND_SEEN band="));
+        print_id(peers[i].id); Serial.println(confirmed ? F(" next=2h") : F(" wait=button"));
+      }
       break;
     }
     radio_listen();
   }
   uint32_t now = millis();
-  bool any_confirmed = false;
-  for (uint8_t i = 0; i < peer_count; ++i) any_confirmed |= beacons[i]->cooling(now);
-  digitalWrite(13, any_confirmed ? HIGH : LOW);
+  digitalWrite(13, have_confirmation && (uint32_t)(now - last_confirmation) < 5000 ? HIGH : LOW);
   uint64_t hop = hop_slot(now_ms());
   int8_t selected = -1;
   if (period_seconds && (!have_tx || (uint32_t)(now - last_tx_ms) >= (uint32_t)period_seconds * 1000)) {

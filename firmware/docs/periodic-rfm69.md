@@ -80,13 +80,24 @@ USB; synchronize again after a reset. A XIAO forwards its time to its radio mode
 3. The addressed band verifies the dog ID, its own ID and the pair-key HMAC.
    It signals the wearer and sends an automatic radio acknowledgement.
    `#BAND_SEEN band=<ID> wait=button` does **not** mean the wearer has responded.
-4. The wearer presses the button. The band sends an authenticated confirmation.
-   The dog logs `#PERSON_CONFIRMED band=<ID> next=2h`.
+4. The wearer clicks/releases **twice**, then presses a **third time**, holds
+   for at least **2 seconds**, and releases. Each short click must be <=500 ms;
+   gaps between presses must be <=1.5 seconds. The whole gesture must finish
+   within the 30-second request window. The band sends an authenticated confirmation.
+   The dog logs `#PERSON_CONFIRMED band=<ID> next=2h` and sends a signed ACK.
+   Only a matching, authenticated ACK makes the band log `#CONFIRMED led=5s`.
+   While a button is physically pressed the status LED is on; otherwise it is
+   off except for exactly 5 seconds after the first valid ACK. Duplicate ACKs
+   cannot prolong that indication. The modem LED mirrors the XIAO status.
+   The dog LED is also on for 5 seconds after a newly accepted confirmation.
 5. The dog skips **that band for two hours starting at receipt of confirmation**.
-   The band also suppresses new periodic prompts for two hours from the button
-   press. Other bands remain eligible throughout. At expiry the next scheduled
+   The band also suppresses new periodic prompts for two hours after the signed
+   ACK arrives. While awaiting ACK it suppresses new prompts for at most 30 seconds. Other bands remain eligible throughout. At expiry the next scheduled
    turn starts a fresh challenge.
-6. If the button packet was lost, a retry of that same challenge elicits the
+6. The band retries its confirmation every 2 seconds for at most 30 seconds
+   while waiting for ACK. The dog acknowledges duplicate confirmations without
+   extending the two-hour cooldown. If the button packet was lost, a retry of
+   that same challenge elicits the
    confirmation again without another cue or button press. A new nonce cannot
    reuse a prior confirmation. Duplicate confirmations do not extend the cooldown.
 
@@ -109,17 +120,18 @@ restarts. Persistent cooldown across all-device power loss is not implemented.
 
 Interval changes last until reboot. A large interval or many peers can exceed the
 30-second response window; keep the default 2 seconds for normal use. The dog LED
-indicates at least one band has a check-in cooldown; it is not live presence.
+indicates a newly accepted confirmation for five seconds; it is not live presence.
 No robot movement or web-console integration is added by this standalone build.
 
 ## Protocol and validation
 
 Periodic packets are 32 bytes: TYPE(1), VERSION(1), NONCE(4), SLOT16(2), HMAC8(8),
-DOG_ID(8), BAND_ID(8). Types 6/7/8 are request/radio reply/human confirmation.
+DOG_ID(8), BAND_ID(8). Types 6/7/8/9 are request/radio reply/human confirmation/dog ACK.
 HMAC-SHA256 truncated to 8 bytes covers TYPE, NONCE, full slot and **both IDs**.
 Legacy types 1–5 are unchanged. The IDs and contents are authenticated, **not encrypted**.
-USB/BLE `#P` can still request a button response; physical-button-only enforcement
-and BLE control authorization remain separate changes. Pair keys are compiled
+USB/BLE `#P` is refused for paired periodic requests: use the physical gesture.
+The fixed gesture is an intent check, not a secret or a replacement for pair-key
+authentication. General BLE control authorization remains a separate change. Pair keys are compiled
 into firmware; secure storage against physical extraction is not implemented.
 
 Host tests cover two distinct pairs, routing, tampered IDs, wrong keys and nonces,
@@ -129,3 +141,13 @@ Provisioning tests check distinct private keys, permissions and no overwrites.
 Real radio interoperability, full board build size and 100 m range still need
 hardware/toolchain validation. The AVR nonce source remains a prototype entropy
 pool, not a hardware CSPRNG.
+
+## Updating to the gesture and ACK version
+
+Update **all three** firmware roles with the existing private headers: dog,
+XIAO and wristband Feather modem. The hardware ID and pair keys stay unchanged.
+Old dog firmware does not send ACK; with an old dog the new wristband cannot
+show the five-second success indication. Power/charge LEDs or LEDs hardwired to
+3.3 V are not firmware-controlled and can remain lit. This feature controls the
+configured user/status LEDs only. Periodic prompts use a short nonblocking
+buzzer/motor cue, not a boot light or repeated LED blinking.

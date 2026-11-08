@@ -3,7 +3,7 @@
 #include "rescue_core.h"
 
 namespace rescue {
-constexpr uint8_t BEACON = 6, BEACON_REPLY = 7, BEACON_ALIVE = 8;
+constexpr uint8_t BEACON = 6, BEACON_REPLY = 7, BEACON_ALIVE = 8, BEACON_ACK = 9;
 constexpr uint32_t CHECKIN_COOLDOWN_MS = 7200000UL;
 constexpr uint32_t CHECKIN_RESPONSE_MS = 30000UL;
 
@@ -48,18 +48,30 @@ inline bool verify_beacon(const uint8_t key[KEY_LEN], const uint8_t* raw, size_t
 
 class PeriodicBand {
  public:
-  enum Event { SILENT, PROMPT, RETRY_CONFIRMATION };
+  enum Event { SILENT, PROMPT, RETRY_CONFIRMATION, ACKNOWLEDGED };
   PeriodicBand(const uint8_t key[KEY_LEN], uint64_t dog, uint64_t band) : dog_(dog), band_(band) {
     memcpy(key_, key, KEY_LEN);
   }
   bool cooling(uint32_t now) const {
     return confirmed_ && (uint32_t)(now - confirmed_at_) < CHECKIN_COOLDOWN_MS;
   }
+  bool waiting(uint32_t now) const {
+    return pending_ && (uint32_t)(now - began_) < CHECKIN_RESPONSE_MS && !cooling(now);
+  }
+  bool success_led(uint32_t now) const { return acknowledged_ && (uint32_t)(now - acknowledged_at_) < 5000; }
   Event on_packet(const uint8_t* raw, size_t len, uint32_t slot, uint32_t now,
                  uint8_t reply[PACKET_LEN], uint8_t bits[3]) {
     uint32_t matched;
+    if (len == PACKET_LEN && raw[0] == BEACON_ACK) {
+      if (!awaiting_ack_ || (uint32_t)(now - confirmed_at_) >= CHECKIN_RESPONSE_MS ||
+          memcmp(nonce_, raw + 2, NONCE_LEN) ||
+          !verify_beacon(key_, raw, len, BEACON_ACK, slot, dog_, band_, &matched) || matched != slot_) return SILENT;
+      awaiting_ack_ = false; acknowledged_ = true; acknowledged_at_ = now;
+      confirmed_ = true; confirmed_at_ = now;
+      return ACKNOWLEDGED;
+    }
     if (!verify_beacon(key_, raw, len, BEACON, slot, dog_, band_, &matched)) return SILENT;
-    if (cooling(now)) {
+    if (cooling(now) || (awaiting_ack_ && (uint32_t)(now - confirmed_at_) < CHECKIN_RESPONSE_MS)) {
       if (memcmp(nonce_, raw + 2, NONCE_LEN) || slot_ != matched) return SILENT;
       make_beacon(key_, BEACON_ALIVE, nonce_, slot_, dog_, band_, reply);
       return RETRY_CONFIRMATION; // recover a lost button packet without another vibration
@@ -71,6 +83,7 @@ class PeriodicBand {
     if (count_ < 64) ++count_;
     memcpy(nonce_, raw + 2, NONCE_LEN);
     slot_ = matched; began_ = now; pending_ = true; confirmed_ = false;
+    awaiting_ack_ = acknowledged_ = false;
     make_beacon(key_, BEACON_REPLY, nonce_, slot_, dog_, band_, reply);
     blink_bits(key_, slot_, bits);
     return PROMPT;
@@ -78,7 +91,15 @@ class PeriodicBand {
   bool press(uint32_t now, uint8_t out[PACKET_LEN]) {
     if (!pending_ || (uint32_t)(now - began_) >= CHECKIN_RESPONSE_MS || cooling(now)) return false;
     make_beacon(key_, BEACON_ALIVE, nonce_, slot_, dog_, band_, out);
-    pending_ = false; confirmed_ = true; confirmed_at_ = now;
+    pending_ = false; confirmed_ = false; confirmed_at_ = now;
+    awaiting_ack_ = true; acknowledged_ = false; last_confirmation_tx_ = now;
+    return true;
+  }
+  bool retry_confirmation(uint32_t now, uint8_t out[PACKET_LEN]) {
+    if (!awaiting_ack_ || (uint32_t)(now - confirmed_at_) >= CHECKIN_RESPONSE_MS ||
+        (uint32_t)(now - last_confirmation_tx_) < 2000) return false;
+    make_beacon(key_, BEACON_ALIVE, nonce_, slot_, dog_, band_, out);
+    last_confirmation_tx_ = now;
     return true;
   }
  private:
@@ -87,5 +108,7 @@ class PeriodicBand {
   uint32_t slot_ = 0, began_ = 0, confirmed_at_ = 0;
   uint8_t head_ = 0, count_ = 0;
   bool pending_ = false, confirmed_ = false;
+  bool awaiting_ack_ = false, acknowledged_ = false;
+  uint32_t acknowledged_at_ = 0, last_confirmation_tx_ = 0;
 };
 }  // namespace rescue

@@ -28,11 +28,16 @@
 #include "config.h"
 #include "rescue_core.h"
 #include "periodic_link.h"
+#include "checkin_button.h"
 #include "hop.h"
 
 rescue::PeriodicBand* periodic_band = nullptr;
 bool last_was_periodic = false;
 uint64_t pairing_id = 0;
+rescue::CheckinButton checkin_button;
+bool cue_active = false, feather_led_ready = false;
+uint32_t cue_started = 0;
+extern int button_pressed_level;
 #if defined(RADIO_FEATHER)
 #define BAND_FEATHER 1  // radio on a Feather 32u4 RFM69 over Serial1 (firmware/src/feather)
 #endif
@@ -234,6 +239,12 @@ void out(int pin, bool on, bool low_on = false) {
 void led(bool on) {
   out(PIN_LED, on, LOW_ON_LED);
   out(PIN_BUTTON_LED, on);
+#ifdef BAND_FEATHER
+  if (feather_led_ready) {
+    static bool last = true;
+    if (last != on) { Serial1.print(on ? "#L1\n" : "#L0\n"); last = on; }
+  }
+#endif
 }
 
 // The Grove Buzzer v1.3 needs a tone: a steady HIGH only clicks, or beeps unreliably.
@@ -269,9 +280,10 @@ void handle(const uint8_t* raw, Medium m) {
   if (!clock_set()) Out.println("#WARN clock not set, send #T <unix>");
   uint8_t reply[rescue::PACKET_LEN], bits[3];
   bool accepted = false;
-  if (raw[0] == rescue::BEACON) {
+  if (raw[0] == rescue::BEACON || raw[0] == rescue::BEACON_ACK) {
     if (!periodic_band || !clock_set()) return;
     auto event = periodic_band->on_packet(raw, rescue::PACKET_LEN, now_slot(), millis(), reply, bits);
+    if (event == rescue::PeriodicBand::ACKNOWLEDGED) { Out.println("#CONFIRMED led=5s"); return; }
     if (event == rescue::PeriodicBand::RETRY_CONFIRMATION) { send(reply, m); return; }
     accepted = event == rescue::PeriodicBand::PROMPT;
   } else {
@@ -281,6 +293,13 @@ void handle(const uint8_t* raw, Medium m) {
     last_was_periodic = raw[0] == rescue::BEACON;
     last_medium = m;
     send(reply, m);  // reply first, then the human cue
+    if (last_was_periodic) {
+      checkin_button.arm(digitalRead(PIN_BUTTON) == button_pressed_level);
+      cue_active = true; cue_started = millis();
+      out(PIN_MOTOR, true); buzz(true);
+      Out.println("#PROMPT click-click-hold2s-release");
+      return;
+    }
     Out.printf("#BUZZ %d %d %d\n", bits[0], bits[1], bits[2]);
     if (PIN_MOTOR != NO_PIN) {  // buzzer = "friendly drone here", motor carries the code
       chirp(120);
@@ -292,12 +311,14 @@ void handle(const uint8_t* raw, Medium m) {
   }
 }
 
-void press() {
+void press(bool physical = false) {
+  if (last_was_periodic && !physical) { Out.println("#PRESS use physical gesture"); return; }
   uint8_t alive[rescue::PACKET_LEN];
   bool ready = last_was_periodic ? periodic_band && periodic_band->press(millis(), alive) : band.press(alive);
   if (ready) {
     send(alive, last_medium, true);
-    Out.println("#PRESS");
+    Out.println(last_was_periodic ? "#PRESS awaiting-dog-ack" : "#PRESS");
+    if (last_was_periodic) return;
     out(PIN_MOTOR, true);  // feel the press go out
     led(true);
     delay(60);
@@ -540,9 +561,12 @@ void setup() {
   pinMode(PIN_BUTTON, BUTTON_MODULE ? INPUT : INPUT_PULLUP);
   delay(20);
   button_pressed_level = digitalRead(PIN_BUTTON) == HIGH ? LOW : HIGH;  // don't hold it at power-on
+  checkin_button.begin(digitalRead(PIN_BUTTON) == button_pressed_level, millis());
 
 #ifdef BAND_FEATHER
   Serial1.begin(FEATHER_LINK_BAUD, SERIAL_8N1, PIN_FEATHER_RX, PIN_FEATHER_TX);
+  feather_led_ready = true;
+  led(false);
 #else
   SPI.begin(PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI, PIN_LORA_CS);
 #endif
@@ -577,10 +601,7 @@ void setup() {
   Out.printf("#PINS sck=%d miso=%d mosi=%d cs=%d rst=%d dio0=%d led=%d button=%d(pressed=%s) buzzer=%d motor=%d\n",
                 PIN_LORA_SCK, PIN_LORA_MISO, PIN_LORA_MOSI, PIN_LORA_CS, PIN_LORA_RST, PIN_LORA_DIO0, PIN_LED,
                 PIN_BUTTON, button_pressed_level == HIGH ? "HIGH" : "LOW", PIN_BUZZER, PIN_MOTOR);
-  led(true);  // power-on: flash, short chirp so you know the buzzer works
-  chirp(40);
-  delay(40);
-  led(false);
+  led(false);  // status LED is off until a button press or verified success
 }
 
 void loop() {
@@ -629,12 +650,22 @@ void loop() {
   }
 #endif
 
-  static uint32_t last_change = 0;
-  bool down = digitalRead(PIN_BUTTON) == button_pressed_level;
-  if (down != was_down && millis() - last_change > 40) {
-    last_change = millis();
+  uint32_t now = millis();
+  if (cue_active && (uint32_t)(now - cue_started) >= 120) {
+    cue_active = false; out(PIN_MOTOR, false); buzz(false);
+  }
+  bool enabled = periodic_band && last_was_periodic && periodic_band->waiting(now);
+  bool gesture = checkin_button.update(digitalRead(PIN_BUTTON) == button_pressed_level, now, enabled);
+  bool down = checkin_button.pressed();
+  if (down != was_down) {
     was_down = down;
     Out.println(down ? "#BTN down" : "#BTN up");
-    if (down) press();
+    if (down && !last_was_periodic && !periodic_band) press(true);
+  }
+  if (gesture) press(true);
+  if (periodic_band) {
+    uint8_t retry[rescue::PACKET_LEN];
+    if (periodic_band->retry_confirmation(now, retry)) send(retry, last_medium, true);
+    led(down || periodic_band->success_led(now));
   }
 }

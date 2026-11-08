@@ -155,7 +155,12 @@ Kết quả mong đợi:
 1. Dog phát `#BEACON band=... wait=button` mỗi 2 giây với một vòng đang chờ.
 2. Vòng rung/nháy đèn một lần cho cửa sổ hỏi 30 giây. Dog có thể in
    `#BAND_SEEN band=... wait=button` khi nghe được trả lời tự động.
-3. Bấm nút trên vòng trong 30 giây. Dog in `#PERSON_CONFIRMED band=... next=2h`.
+3. Trong 30 giây, **bấm–thả hai lần**, sau đó **bấm lần thứ ba, giữ ít nhất 2 giây
+   rồi thả**. Hai lần bấm nhanh mỗi lần không quá 0,5 giây; khoảng nghỉ không quá
+   1,5 giây. Không bấm nút RESET. Dog in `#PERSON_CONFIRMED band=... next=2h`.
+   Khi vòng nhận gói báo nhận đúng từ dog, nó in `#CONFIRMED led=5s`: đèn trạng
+   thái sáng 5 giây rồi tắt. Đèn cũng sáng trong lúc đang bấm nút; đèn nguồn/sạc
+   không thuộc chức năng này.
 4. Gõ `#?`: vòng đó ở `CONFIRMED_WAIT_2H`. Dog không hỏi lại nó trong 2 giờ;
    vòng khác chưa xác nhận vẫn được hỏi. Không cần chờ 2 giờ để thử các bước 1–3.
 
@@ -193,3 +198,11 @@ Gõ `#?` rồi Enter. Gửi dòng `#SPI ...` để chẩn đoán. Với RFM69 gi
 `RF69_VERSION` dự kiến đọc ổn định `24 24 24` (hex). Kết quả khác chưa tự nó chứng
 minh chip hỏng. Sau phép thử cần nạp lại `dog_feather_rfm69` và đồng bộ giờ để
 khôi phục hoạt động; bản probe thay thế firmware check-in trên board đó.
+
+### Bản thao tác nút và đèn mới
+
+Cần nạp lại **dog, XIAO và Feather radio trên vòng** với các file khóa cũ tương
+ứng, rồi đồng bộ giờ. Không tạo lại khóa. Với board dog ghi `RFM9x LoRa`, dùng
+`dog_feather_periodic_rfm9x`; XIAO dùng `band_xiao_feather`; modem vòng RFM69 dùng
+`feather_radio`. Vòng mới chờ ACK từ dog nên không hiện đèn thành công nếu dog
+vẫn chạy bản cũ. `#P` qua USB/BLE không thay được thao tác vật lý cho yêu cầu định kỳ.

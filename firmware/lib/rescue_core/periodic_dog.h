@@ -66,6 +66,16 @@ class PeriodicDog {
     return false;
   }
 
+  // ACK duplicates for 30 s to recover lost receipts, without extending cooldown.
+  bool receipt(const uint8_t* raw, size_t len, uint32_t now, uint32_t slot, uint8_t out[PACKET_LEN]) const {
+    uint32_t matched;
+    if (!cooling(now) || (uint32_t)(now - confirmed_at_) >= RESPONSE_MS || len != PACKET_LEN ||
+        memcmp(raw + 2, nonce_, NONCE_LEN) ||
+        !verify_beacon(key_, raw, len, BEACON_ALIVE, slot, dog_, band_, &matched) || matched != slot_) return false;
+    make_beacon(key_, BEACON_ACK, nonce_, slot_, dog_, band_, out);
+    return true;
+  }
+
  private:
   uint8_t key_[KEY_LEN], nonce_[NONCE_LEN];
   uint64_t dog_, band_;
